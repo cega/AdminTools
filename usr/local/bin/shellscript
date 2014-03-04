@@ -1,0 +1,58 @@
+#!/bin/bash
+################################################################
+# (c) Copyright 2014 B-LUC Consulting and Thomas Bullinger
+################################################################
+# Create a new shell script using a certain standard
+
+if [ $# -eq 0 ]
+then
+    echo "Usage: $0 filename"
+    exit 1
+fi
+SNAME="$1"
+
+if [ ! -s "$SNAME" ]
+then
+    cat << EOT > $SNAME
+#!/bin/bash
+################################################################
+# (c) Copyright $(date +%Y) B-LUC Consulting and Thomas Bullinger
+################################################################
+
+#--------------------------------------------------------------------
+# Set a sensible path for executables
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+PROG=\${0##*/}
+
+#--------------------------------------------------------------------
+# Ensure that only one instance is running
+LOCKFILE=/tmp/\$PROG.lock
+if [ -f \$LOCKFILE ]
+then
+    # The file exists so read the PID
+    MYPID=\$(< \$LOCKFILE)
+    [ -z "\$(ps h -p \$MYPID)" ] || exit 0
+fi
+
+# Make sure we remove the lock file at exit
+trap "rm -f \$LOCKFILE /tmp/\$\$*" EXIT
+echo "\$\$" > \$LOCKFILE            
+
+#--------------------------------------------------------------------
+# Specifying "-x" to the bash invocation = DEBUG
+DEBUG=''
+[[ \$- = *x* ]] && DEBUG='-x'
+
+#--------------------------------------------------------------------
+# This host and domain
+THISHOST=\$(hostname)
+[[ \$THISHOST = *.* ]] || THISHOST=\$(hostname -f)
+THISDOMAIN=\${THISHOST#*.}
+
+#--------------------------------------------------------------------
+# We are done
+exit 0
+EOT
+fi
+EDITOR=${EDITOR:-vim.tiny}
+exec $EDITOR $SNAME
