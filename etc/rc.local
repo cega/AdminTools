@@ -1,0 +1,407 @@
+#!/bin/sh -e
+#
+# rc.local
+#
+# This script is executed at the end of each multiuser runlevel.
+# Make sure that the script will "exit 0" on success or any other
+# value on error.
+#
+# In order to enable or disable this script just change the execution
+# bits.
+#
+# By default this script does nothing.
+
+## B-LUC adaptations
+#-------------------------------------------------------------------------
+for IF in $(awk -F: '/eth|bond/ {gsub(/ /,"",$1);print $1}' /proc/net/dev)
+do
+    ifconfig $IF txqueuelen 2048
+done
+
+#-------------------------------------------------------------------------
+if [ -d /etc/sysctl.d ]
+then
+    cat << EOT > /etc/sysctl.d/90-bluc.conf
+# Adaptations by B-LUC Consulting
+
+# Tune the kernel scheduler for a server
+# See: http://people.redhat.com/jeder/presentations/customer_convergence/2012-04-jeder_customer_convergence.pdf
+kernel.sched_min_granularity_ns = 10000000
+kernel.sched_wakeup_granularity_ns = 15000000
+kernel.sched_migration_cost = 1000000
+
+# Do less swapping
+vm.swappiness = 10
+vm.dirty_ratio = 60
+vm.dirty_background_ratio = 2
+
+# Protect bottom 64k of memory from mmap to prevent NULL-dereference
+# attacks against potential future kernel security vulnerabilities.
+vm.mmap_min_addr = 65536
+
+# Keep at least 64MB of free RAM space available
+vm.min_free_kbytes = 65536
+
+# Controls the maximum size of a message, in bytes
+kernel.msgmnb = 65536
+
+# Controls the default maxmimum size of a message queue
+kernel.msgmax = 65536
+
+# Automatic reboot
+vm.panic_on_oom = 1
+kernel.panic_on_oops = 1
+kernel.unknown_nmi_panic = 1
+kernel.panic_on_unrecovered_nmi = 1
+kernel.panic = 60
+
+# Stop low-level messages on console
+kernel.printk = 4 4 1 7
+
+# Decrease the time default value for tcp_fin_timeout connection
+net.ipv4.tcp_fin_timeout = 30
+net.ipv4.tcp_synack_retries = 2
+net.ipv4.tcp_max_syn_backlog = 4096
+
+# Decrease the time default value for connections to keep alive
+net.ipv4.tcp_keepalive_time = 1800
+net.ipv4.tcp_keepalive_probes = 5
+net.ipv4.tcp_keepalive_intvl = 15
+
+# Turn on SACK
+net.ipv4.tcp_dsack = 1
+net.ipv4.tcp_sack = 1
+net.ipv4.tcp_fack = 1
+
+# Turn on the tcp_window_scaling
+net.ipv4.tcp_window_scaling = 1
+
+# Increase the maximum total buffer-space allocatable
+net.ipv4.tcp_mem = 8388608 12582912 16777216
+net.ipv4.udp_mem = 8388608 12582912 16777216
+
+# Increase the maximum read-buffer space allocatable
+net.ipv4.tcp_rmem = 8192 87380 16777216
+net.ipv4.udp_rmem_min = 16384
+
+# Increase the maximum write-buffer-space allocatable
+net.ipv4.tcp_wmem = 8192 65536 16777216
+net.ipv4.udp_wmem_min = 16384
+
+# Increase the maximum and default receive socket buffer size
+net.core.rmem_max=16777216
+net.core.rmem_default=262144
+
+# Increase the maximum and default receive socket buffer size
+net.core.rmem_max=16777216
+net.core.rmem_default=262144
+
+# Increase the maximum and default send socket buffer size
+net.core.wmem_max=16777216
+net.core.wmem_default=262144
+
+# Increase the tcp-time-wait buckets pool size
+net.ipv4.tcp_max_tw_buckets = 1440000
+net.ipv4.tcp_max_orphans = 1440000
+net.ipv4.tcp_tw_recycle = 1
+net.ipv4.tcp_tw_reuse = 1
+
+# Increase the maximum memory used to reassemble IP fragments
+net.ipv4.ipfrag_high_thresh = 512000
+net.ipv4.ipfrag_low_thresh = 446464
+
+# Increase the maximum amount of option memory buffers
+net.core.optmem_max = 65536
+
+# don't cache ssthresh from previous connection
+net.ipv4.tcp_no_metrics_save = 1
+net.ipv4.tcp_moderate_rcvbuf = 1
+
+# Increase RPC slots
+sunrpc.tcp_slot_table_entries = 32
+sunrpc.udp_slot_table_entries = 32
+
+# Increase size of RPC datagram queue length
+net.unix.max_dgram_qlen = 50
+
+# Don't allow the arp table to become bigger than this
+net.ipv4.neigh.default.gc_thresh3 = 2048
+
+# Tell the gc when to become aggressive with arp table cleaning.
+# Adjust this based on size of the LAN. 1024 is suitable for most /24
+# networks
+net.ipv4.neigh.default.gc_thresh2 = 1024
+
+# Adjust where the gc will leave arp table alone - set to 32.
+net.ipv4.neigh.default.gc_thresh1 = 32
+
+# Adjust to arp table gc to clean-up more often
+net.ipv4.neigh.default.gc_interval = 30
+
+# Increase TCP queue length
+net.ipv4.neigh.default.proxy_qlen = 96
+net.ipv4.neigh.default.unres_qlen = 6
+
+# Enable Explicit Congestion Notification (RFC 3168), disable it if it
+# doesn't work for you
+net.ipv4.tcp_ecn = 1
+net.ipv4.tcp_reordering = 3
+
+# How many times to retry killing an alive TCP connection
+net.ipv4.tcp_retries2 = 15
+net.ipv4.tcp_retries1 = 3
+
+# Increase number of incoming connections
+net.core.somaxconn = 32768
+
+# Increase number of incoming connections backlog
+net.core.netdev_max_backlog = 4096
+net.core.dev_weight = 64
+
+# This will enusre that immediatly subsequent connections use the new values
+net.ipv4.route.flush = 1
+net.ipv6.route.flush = 1
+EOT
+elif [ -z "$(grep B-LUC /etc/sysctl.conf)" ]
+then
+    cat << EOT >> /etc/sysctl.conf
+# Adaptations by B-LUC Consulting
+
+# Tune the kernel scheduler for a server
+# See: http://people.redhat.com/jeder/presentations/customer_convergence/2012-04-jeder_customer_convergence.pdf
+kernel.sched_min_granularity_ns = 10000000
+kernel.sched_wakeup_granularity_ns = 15000000
+kernel.sched_migration_cost = 1000000
+
+# Decrease the time default value for tcp_fin_timeout connection
+net.ipv4.tcp_fin_timeout = 30
+
+# Decrease the time default value for connections to keep alive
+net.ipv4.tcp_keepalive_time = 1800
+net.ipv4.tcp_keepalive_probes = 5
+net.ipv4.tcp_keepalive_intvl = 15
+
+# Turn on SACK
+net.ipv4.tcp_dsack = 1
+net.ipv4.tcp_sack = 1
+net.ipv4.tcp_fack = 1
+
+# Turn on the tcp_window_scaling
+net.ipv4.tcp_window_scaling = 1
+
+# Increase the maximum total buffer-space allocatable
+net.ipv4.tcp_mem = 8388608 12582912 16777216
+net.ipv4.udp_mem = 8388608 12582912 16777216
+
+# Increase the maximum read-buffer space allocatable
+net.ipv4.tcp_rmem = 8192 87380 16777216
+net.ipv4.udp_rmem_min = 16384
+
+# Increase the maximum write-buffer-space allocatable
+net.ipv4.tcp_wmem = 8192 65536 16777216
+net.ipv4.udp_wmem_min = 16384
+
+# Increase the maximum and default receive socket buffer size
+net.core.rmem_max=16777216
+net.core.rmem_default=262144
+
+# Increase the maximum and default receive socket buffer size
+net.core.rmem_max=16777216
+net.core.rmem_default=262144
+
+# Increase the maximum and default send socket buffer size
+net.core.wmem_max=16777216
+net.core.wmem_default=262144
+
+# Increase the tcp-time-wait buckets pool size
+net.ipv4.tcp_max_tw_buckets = 1440000
+net.ipv4.tcp_max_orphans = 1440000
+net.ipv4.tcp_tw_recycle = 1
+net.ipv4.tcp_tw_reuse = 1
+
+# Increase the maximum memory used to reassemble IP fragments
+net.ipv4.ipfrag_high_thresh = 512000
+net.ipv4.ipfrag_low_thresh = 446464
+
+# Increase the maximum amount of option memory buffers
+net.core.optmem_max = 65536
+
+# don't cache ssthresh from previous connection
+net.ipv4.tcp_no_metrics_save = 1
+net.ipv4.tcp_moderate_rcvbuf = 1
+
+# Increase RPC slots
+sunrpc.tcp_slot_table_entries = 32
+sunrpc.udp_slot_table_entries = 32
+
+# Increase size of RPC datagram queue length
+net.unix.max_dgram_qlen = 50
+
+# Don't allow the arp table to become bigger than this
+net.ipv4.neigh.default.gc_thresh3 = 2048
+
+# Tell the gc when to become aggressive with arp table cleaning.
+# Adjust this based on size of the LAN. 1024 is suitable for most /24
+# networks
+net.ipv4.neigh.default.gc_thresh2 = 1024
+
+# Adjust where the gc will leave arp table alone - set to 32.
+net.ipv4.neigh.default.gc_thresh1 = 32
+
+# Adjust to arp table gc to clean-up more often
+net.ipv4.neigh.default.gc_interval = 30
+
+# Increase TCP queue length
+net.ipv4.neigh.default.proxy_qlen = 96
+net.ipv4.neigh.default.unres_qlen = 6
+
+# Enable Explicit Congestion Notification (RFC 3168), disable it if it
+# doesn't work for you
+net.ipv4.tcp_ecn = 1
+net.ipv4.tcp_reordering = 3
+
+# How many times to retry killing an alive TCP connection
+net.ipv4.tcp_retries2 = 15
+net.ipv4.tcp_retries1 = 3
+
+# Increase number of incoming connections
+net.core.somaxconn = 32768
+
+# Increase number of incoming connections backlog
+net.core.netdev_max_backlog = 4096
+net.core.dev_weight = 64
+
+# This will enusre that immediatly subsequent connections use the new values
+net.ipv4.route.flush = 1
+net.ipv6.route.flush = 1
+EOT
+fi
+service procps start
+
+#-------------------------------------------------------------------------
+# Set readahead for disks                                                 
+SECTORS=$((16 * 512))
+if [ -e /proc/mdstat ]                                                    
+then                                                                      
+    for DEV in $(awk '/^md/ {gsub(/\[[0-9]\]/,"");print $1" "$5" "$6}' /proc/mdstat)
+    do                                                                              
+        RA=$(blockdev --getra /dev/$DEV)                                        
+        [ $RA -ne $SECTORS ] && blockdev --setra $SECTORS /dev/$DEV                   
+    done                                                                            
+fi                                                                                      
+for DEV in $( ls /dev/[hs]d[a-z][0-9] | awk '{sub(/\/dev\//,"");printf "%s ",$1}')      
+do                                                                                      
+    RA=$(blockdev --getra /dev/$DEV)                                                
+    [ $RA -ne $SECTORS ] && blockdev --setra $SECTORS /dev/$DEV                           
+done                                                                                    
+for DEV in $( ls /dev/mapper/* | awk '{sub(/\/dev\/mapper\//,"");printf "%s ",$1}')     
+do                                                                                      
+    [ "T$DEV" = 'Tcontrol' ] && continue                                            
+    RA=$(blockdev --getra /dev/mapper/$DEV)                                         
+    [ $RA -ne $SECTORS ] && blockdev --setra $SECTORS /dev/mapper/$DEV
+done
+if [ -d /dev/etherd ]
+then
+    for DEV in $(ls /dev/etherd/e[0-9].[0-9]p[0-9] | awk'{sub(/\/dev\/etherd\//,"");printf "%s ",$1}')
+    do
+        [ "T$DEV" = 'Tcontrol' ] && continue
+        RA=$(blockdev --getra /dev/etherd/$DEV)
+        [ $RA -ne $SECTORS ] && blockdev --setra $SECTORS /dev/etherd/$DEV
+    done
+fi
+
+for FS in $(mount | awk '/ext[234]/ {print $1}')
+do
+    tune2fs -e panic -c 5 -i 1m $FS
+done
+
+#-------------------------------------------------------------------------
+# Distribute the IRQ handling across cores
+cat << EOT > /etc/default/irqbalance
+# Configuration for the irqbalance daemon
+# See: http://www.irqbalance.org/documentation.php
+
+# No need to continue if we don't have irqbalance installed
+[ -x /usr/sbin/irqbalance ] || exit 0
+
+ENABLED=0
+NUM_CORES=\$(grep 'core id' /proc/cpuinfo | sort -u | wc -l)
+NUM_CPUS=\$(grep -c '^processor' /proc/cpuinfo)
+if [ \$NUM_CORES -gt 1 -o \$NUM_CPUS -gt 1 ]
+then
+    # Only enable this on multi-core CPUs or a multi-CPU system
+    ENABLED=1
+
+    # Balance the IRQs only once?
+    ONESHOT=1       # Single CPU
+    [ \$NUM_CPUS -gt 1 ] && ONESHOT=0
+
+    # Enable RPS
+    # See http://christophe.vandeplas.com/2013/11/suricata-capturekerneldrops-caused-by.html
+    for ETH in \$(grep ':' /proc/net/dev | cut -d: -f1 | egrep -v '(lo|tap)')
+    do
+        # Get the interrupt for this interface
+        IRQ=\$(awk "/\$ETH/"' {print int(\$1)}' /proc/interrupts)
+        [ -z "\$IRQ" ] && continue
+        echo 1 > /proc/irq/\$IRQ/smp_affinity
+
+        # Exclude it from irqbalance
+        OPTIONS="\$OPTIONS --banirq=\$IRQ"
+
+        echo 'fe' > /sys/class/net/\$ETH/queues/rx-0/rps_cpus
+        echo 32768 > /proc/sys/net/core/rps_sock_flow_entries
+        echo 4096 > /sys/class/net/\$ETH/queues/rx-0/rps_flow_cnt
+    done
+fi
+EOT
+
+#-------------------------------------------------------------------------
+# Set the correct I/O scheduler
+# Tweak the cfq scheduler
+IS_VIRTUAL=0
+if [ ! -z "$(grep -m1 VMware /proc/scsi/scsi)"  -o ! -z "$(grep 'DMI:.*VMware' /var/log/dmesg)" ]
+then
+    IS_VIRTUAL=1
+elif [ ! -z "$(egrep 'KVM|QEMU' /proc/cpuinfo)" -o ! -z "$(grep Bochs /sys/class/dmi/id/bios_vendor)" ]
+then
+    IS_VIRTUAL=2
+fi
+cd /sys/block
+for DEV in [vhs]d?
+do
+    [ -w ${DEV}/queue/nr_requests ] && echo 512 > ${DEV}/queue/nr_requests
+    if [ -w ${DEV}/queue/read_ahead_kb ]
+    then
+        [ $(< ${DEV}/queue/read_ahead_kb) -lt 2048 ] && echo 2048 > ${DEV}/queue/read_ahead_kb
+    fi
+    if [ $IS_VIRTUAL -eq 0 ]
+    then
+        [ -w ${DEV}/queue/scheduler ] && echo cfq > ${DEV}/queue/scheduler
+        [ -w ${DEV}/device/queue_depth ] && echo 1 > ${DEV}/device/queue_depth
+        # See: http://www.nextre.it/oracledocs/ioscheduler_03.html
+        [ -w ${DEV}/queue/iosched/slice_idle ] && echo 0 > ${DEV}/queue/iosched/slice_idle
+        [ -w ${DEV}/queue/iosched/max_depth ] && echo 64 > ${DEV}/queue/iosched/max_depth
+        [ -w ${DEV}/queue/iosched/queued ] && echo 8 > ${DEV}/queue/iosched/queued
+        # See: http://www.linux-mag.com/id/7572/2
+        [ -w ${DEV}/queue/iosched/quantum ] && echo 32 > ${DEV}/queue/iosched/quantum
+        # See: http://lkml.indiana.edu/hypermail/linux/kernel/0906.3/02344.html
+        # (favors writes over reads)
+        [ -w ${DEV}/queue/iosched/slice_async ] && echo 10 > ${DEV}/queue/iosched/slice_async
+        [ -w ${DEV}/queue/iosched/slice_sync ] && echo 100 > ${DEV}/queue/iosched/slice_sync
+        # See: http://oss.oetiker.ch/rrdtool-trac/wiki/TuningRRD
+        [ -w ${DEV}/queue/nr_requests ] && echo 512 > ${DEV}/queue/nr_requests
+    else
+        # Use "noop" for VMware and KVM guests
+        [ -w ${DEV}/queue/scheduler ] && echo noop > ${DEV}/queue/scheduler
+        # As per http://kb.vmware.com/selfservice/microsites/search.do?language=en_US&cmd=displayKC&externalId=1009465
+        [ -w ${DEV}/device/timeout ] && echo 180 > ${DEV}/device/timeout
+    fi       
+done
+
+#-------------------------------------------------------------------------
+# Watch system performance
+[ -x /usr/local/sbin/SysMon.pl ] && /usr/local/sbin/SysMon.pl -D -a ateam@digitaltowpath.org -o /var/tmp
+
+#-------------------------------------------------------------------------
+exit 0
+
