@@ -1,0 +1,46 @@
+#!/usr/bin/perl -Tw
+#####################################################################
+## (c) CopyRight 2014 B-LUC Consulting and Thomas Bullinger
+#####################################################################
+# Needed packages
+use strict;
+
+# Program options
+delete @ENV{qw(IFS CDPATH ENV BASH_ENV)};
+$ENV{'PATH'} = '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin';
+
+# Globals
+my @Lines   = ();
+my $LineNo  = 0;
+my $EntryNo = 0;
+
+# Speed up STDOUT
+$|++;
+
+open( MAILQ, '-|', 'mailq' ) or die("Can not read from mailq command: $!");
+while ( my $MLine = <MAILQ> )
+{
+    $LineNo++;
+    next unless ( $LineNo > 1 );
+    chomp($MLine);
+    if ( length($MLine) == 0 )
+    {
+        # A new entry starts
+        if ( scalar @Lines )
+        {
+            my $OutLine = "$MLine" . join( " ", @Lines );
+            $OutLine =~ s/\s+/ /g;
+            print "$OutLine\n";
+            $EntryNo++;
+            @Lines = ();
+        } ## end if ( scalar @Lines )
+    } else
+    {
+        push( @Lines, "$MLine" );
+    } ## end else [ if ( length($MLine) ==...)]
+} ## end while ( my $MLine = <MAILQ>...)
+
+# Print summary
+print "$EntryNo queue entries found\n";
+exit 0;
+__END__
