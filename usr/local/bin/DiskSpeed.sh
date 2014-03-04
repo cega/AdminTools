@@ -1,4 +1,7 @@
 #!/bin/bash
+#####################################################################
+## (c) CopyRight 2014 B-LUC Consulting and Thomas Bullinger
+#####################################################################
 
 DSDIR=${1-/opt/zimbra}
 trap "rm -f $DSDIR/1024m" EXIT
