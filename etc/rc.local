@@ -13,34 +13,111 @@
 
 ## B-LUC adaptations
 #-------------------------------------------------------------------------
-for IF in $(awk -F: '/eth|bond/ {gsub(/ /,"",$1);print $1}' /proc/net/dev)
+for ETH in $(grep ':' /proc/net/dev | cut -d: -f1 | egrep -v '(lo|tap)')
 do
-    ifconfig $IF txqueuelen 2048
+    # Turn off Ethernet checksumming in hardware
+# Dangerous:    ethtool -K $ETH tx off rx off
+    # Disable Wake-On-LAN
+    ethtool -s $ETH wol d
+    # Increase the TX queue length
+    ifconfig $ETH txqueuelen 2048
 done
 
 #-------------------------------------------------------------------------
-if [ -d /etc/sysctl.d ]
-then
-    cat << EOT > /etc/sysctl.d/90-bluc.conf
-# Adaptations by B-LUC Consulting
+# See: https://klaver.it/linux/sysctl.conf
+echo '# Dynamically created sysctl.conf' > /tmp/sysctl.conf
 
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Improve system memory management
+echo '# Increase size of file handles and inode cache' >> /tmp/sysctl.conf
+[ $(sysctl -n fs.file-max) -ge 209708 ] && echo -n '# ' >> /tmp/sysctl.conf
+echo 'fs.file-max = 209708' >> /tmp/sysctl.conf
+echo '' >> /tmp/sysctl.conf
+
+cat << EOT >> /tmp/sysctl.conf
+# Do less swapping
+vm.swappiness = 10
+EOT
+
+dpkg-query -W xserver-xorg &> /dev/null
+[ $? -ne 0 ] && cat << EOT >> /tmp/sysctl.conf
 # Tune the kernel scheduler for a server
 # See: http://people.redhat.com/jeder/presentations/customer_convergence/2012-04-jeder_customer_convergence.pdf
 kernel.sched_min_granularity_ns = 10000000
 kernel.sched_wakeup_granularity_ns = 15000000
 kernel.sched_migration_cost = 1000000
+EOT
+cat << EOT >> /tmp/sysctl.conf
 
-# Do less swapping
-vm.swappiness = 10
-vm.dirty_ratio = 60
-vm.dirty_background_ratio = 2
+# Adjust disk write buffers
+EOT
+if [ ! -z "$(lspci | egrep 'RAID.*(MegaRAID|PowerEdge)')" ]
+then
+        cat << EOT >> /tmp/sysctl.conf
+# See http://www.fccps.cz/download/adv/frr/hdd/hdd.html
+# 90% disk cache for RAID
+vm.dirty_ratio = 90
+# Start writing at 45%
+vm.dirty_background_ratio = 45
+# Lengthen to the write intervals to 60s/40s
+vm.dirty_expire_centisecs = 6000
+vm.dirty_writeback_centisecs = 4000
+EOT
+else
+    SYSTEM_RAM=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
+    if [ $SYSTEM_RAM -lt $((2 * 1024 * 1024)) ]
+    then
+        cat << EOT >> /tmp/sysctl.conf
+# 60% disk cache under 2GB RAM
+vm.dirty_ratio = 40
+# Start writing at 10%
+vm.dirty_background_ratio = 10
+EOT
+    elif [ $SYSTEM_RAM -lt $((8 * 1024 * 1024)) ]
+    then
+        cat << EOT >> /tmp/sysctl.conf
+# 30% disk cache under 4GB RAM
+vm.dirty_ratio = 30
+# Start writing at 7%
+vm.dirty_background_ratio = 7
+EOT
+    else
+        cat << EOT >> /tmp/sysctl.conf
+# Hold up to 600MB in disk cache
+vm.dirty_bytes = $((600 * 1024 * 1024))
+# Start writing at 300MB
+vm.dirty_background_bytes = $((300 * 1024 * 1024))
+EOT
+    fi
+fi
 
+cat << EOT >> /tmp/sysctl.conf
 # Protect bottom 64k of memory from mmap to prevent NULL-dereference
 # attacks against potential future kernel security vulnerabilities.
 vm.mmap_min_addr = 65536
 
 # Keep at least 64MB of free RAM space available
 vm.min_free_kbytes = 65536
+
+EOT
+
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Tune overall security settings
+cat << EOT >> /tmp/sysctl.conf
+# Enable /proc/$pid/maps privacy so that memory relocations are not
+# visible to other users.
+kernel.maps_protect = 1
+
+# Controls the System Request debugging functionality of the kernel
+kernel.sysrq = 1
+
+# Controls whether core dumps will append the PID to the core filename.
+# Useful for debugging multi-threaded applications.
+kernel.core_uses_pid = 1
+
+# The contents of /proc/<pid>/maps and smaps files are only visible to
+# readers that are allowed to ptrace() the process
+kernel.maps_protect = 1
 
 # Controls the maximum size of a message, in bytes
 kernel.msgmnb = 65536
@@ -58,120 +135,42 @@ kernel.panic = 60
 # Stop low-level messages on console
 kernel.printk = 4 4 1 7
 
-# Decrease the time default value for tcp_fin_timeout connection
-net.ipv4.tcp_fin_timeout = 30
+EOT
+
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Tune the network stack for security
+cat << EOT >> /tmp/sysctl.conf
+# Prevent SYN attack, enable SYNcookies (they will kick-in when the max_syn_backlog reached)
+net.ipv4.tcp_syncookies = 1
+net.ipv4.tcp_syn_retries = 5
 net.ipv4.tcp_synack_retries = 2
 net.ipv4.tcp_max_syn_backlog = 4096
 
-# Decrease the time default value for connections to keep alive
-net.ipv4.tcp_keepalive_time = 1800
-net.ipv4.tcp_keepalive_probes = 5
-net.ipv4.tcp_keepalive_intvl = 15
+# Disables packet forwarding
+net.ipv4.ip_forward = 0
+net.ipv4.conf.all.forwarding = 0
+net.ipv4.conf.default.forwarding = 0
+net.ipv6.conf.all.forwarding = 0
+net.ipv6.conf.default.forwarding = 0
 
-# Turn on SACK
-net.ipv4.tcp_dsack = 1
-net.ipv4.tcp_sack = 1
-net.ipv4.tcp_fack = 1
+# Disable IPv6
+net.ipv6.conf.all.disable_ipv6 = 1
+net.ipv6.conf.default.disable_ipv6 = 1
+net.ipv6.conf.lo.disable_ipv6 = 1
 
-# Turn on the tcp_window_scaling
-net.ipv4.tcp_window_scaling = 1
+# Disables IP source routing
+net.ipv4.conf.all.accept_source_route = 0
+net.ipv4.conf.default.accept_source_route = 0
+net.ipv6.conf.all.accept_source_route = 0
+net.ipv6.conf.default.accept_source_route = 0
 
-# Increase the maximum total buffer-space allocatable
-net.ipv4.tcp_mem = 8388608 12582912 16777216
-net.ipv4.udp_mem = 8388608 12582912 16777216
+# Enable IP spoofing protection, turn on source route verification
+net.ipv4.conf.all.rp_filter = 1
+net.ipv4.conf.default.rp_filter = 1
 
-# Increase the maximum read-buffer space allocatable
-net.ipv4.tcp_rmem = 8192 87380 16777216
-net.ipv4.udp_rmem_min = 16384
-
-# Increase the maximum write-buffer-space allocatable
-net.ipv4.tcp_wmem = 8192 65536 16777216
-net.ipv4.udp_wmem_min = 16384
-
-# Increase the maximum and default receive socket buffer size
-net.core.rmem_max=16777216
-net.core.rmem_default=262144
-
-# Increase the maximum and default receive socket buffer size
-net.core.rmem_max=16777216
-net.core.rmem_default=262144
-
-# Increase the maximum and default send socket buffer size
-net.core.wmem_max=16777216
-net.core.wmem_default=262144
-
-# Increase the tcp-time-wait buckets pool size
-net.ipv4.tcp_max_tw_buckets = 1440000
-net.ipv4.tcp_max_orphans = 1440000
-net.ipv4.tcp_tw_recycle = 1
-net.ipv4.tcp_tw_reuse = 1
-
-# Increase the maximum memory used to reassemble IP fragments
-net.ipv4.ipfrag_high_thresh = 512000
-net.ipv4.ipfrag_low_thresh = 446464
-
-# Increase the maximum amount of option memory buffers
-net.core.optmem_max = 65536
-
-# don't cache ssthresh from previous connection
-net.ipv4.tcp_no_metrics_save = 1
-net.ipv4.tcp_moderate_rcvbuf = 1
-
-# Increase RPC slots
-sunrpc.tcp_slot_table_entries = 32
-sunrpc.udp_slot_table_entries = 32
-
-# Increase size of RPC datagram queue length
-net.unix.max_dgram_qlen = 50
-
-# Don't allow the arp table to become bigger than this
-net.ipv4.neigh.default.gc_thresh3 = 2048
-
-# Tell the gc when to become aggressive with arp table cleaning.
-# Adjust this based on size of the LAN. 1024 is suitable for most /24
-# networks
-net.ipv4.neigh.default.gc_thresh2 = 1024
-
-# Adjust where the gc will leave arp table alone - set to 32.
-net.ipv4.neigh.default.gc_thresh1 = 32
-
-# Adjust to arp table gc to clean-up more often
-net.ipv4.neigh.default.gc_interval = 30
-
-# Increase TCP queue length
-net.ipv4.neigh.default.proxy_qlen = 96
-net.ipv4.neigh.default.unres_qlen = 6
-
-# Enable Explicit Congestion Notification (RFC 3168), disable it if it
-# doesn't work for you
-net.ipv4.tcp_ecn = 1
-net.ipv4.tcp_reordering = 3
-
-# How many times to retry killing an alive TCP connection
-net.ipv4.tcp_retries2 = 15
-net.ipv4.tcp_retries1 = 3
-
-# Increase number of incoming connections
-net.core.somaxconn = 32768
-
-# Increase number of incoming connections backlog
-net.core.netdev_max_backlog = 4096
-net.core.dev_weight = 64
-
-# This will enusre that immediatly subsequent connections use the new values
-net.ipv4.route.flush = 1
-net.ipv6.route.flush = 1
-EOT
-elif [ -z "$(grep B-LUC /etc/sysctl.conf)" ]
-then
-    cat << EOT >> /etc/sysctl.conf
-# Adaptations by B-LUC Consulting
-
-# Tune the kernel scheduler for a server
-# See: http://people.redhat.com/jeder/presentations/customer_convergence/2012-04-jeder_customer_convergence.pdf
-kernel.sched_min_granularity_ns = 10000000
-kernel.sched_wakeup_granularity_ns = 15000000
-kernel.sched_migration_cost = 1000000
+# Enable Log Spoofed Packets, Source Routed Packets, Redirect Packets
+net.ipv4.conf.all.log_martians = 1
+net.ipv4.conf.default.log_martians = 1
 
 # Decrease the time default value for tcp_fin_timeout connection
 net.ipv4.tcp_fin_timeout = 30
@@ -181,11 +180,50 @@ net.ipv4.tcp_keepalive_time = 1800
 net.ipv4.tcp_keepalive_probes = 5
 net.ipv4.tcp_keepalive_intvl = 15
 
+# Don't relay bootp
+net.ipv4.conf.all.bootp_relay = 0
+
+# Don't proxy arp for anyone
+net.ipv4.conf.all.proxy_arp = 0
+
 # Turn on SACK
 net.ipv4.tcp_dsack = 1
 net.ipv4.tcp_sack = 1
 net.ipv4.tcp_fack = 1
 
+# Don't ignore directed pings
+net.ipv4.icmp_echo_ignore_all = 0
+
+# Disable timestamps
+net.ipv4.tcp_timestamps = 0
+
+# Enable ignoring broadcasts request
+net.ipv4.icmp_echo_ignore_broadcasts = 1
+
+# Enable bad error message Protection
+net.ipv4.icmp_ignore_bogus_error_responses = 1
+
+# Allowed local port range
+net.ipv4.ip_local_port_range = 32768 60416
+
+# Enable a fix for RFC1337 - time-wait assassination hazards in TCP
+net.ipv4.tcp_rfc1337 = 1
+
+EOT
+
+#- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Tune the network stack for performance
+if [ -f /lib/modules/`uname -r`/kernel/net/ipv4/tcp_cubic.ko ]
+then
+    modprobe tcp_cubic
+    cat << EOT >> /tmp/sysctl.conf
+# Use modern congestion control algorithm
+net.ipv4.tcp_congestion_control = cubic
+
+EOT
+fi
+
+cat << EOT >> /tmp/sysctl.conf
 # Turn on the tcp_window_scaling
 net.ipv4.tcp_window_scaling = 1
 
@@ -200,10 +238,6 @@ net.ipv4.udp_rmem_min = 16384
 # Increase the maximum write-buffer-space allocatable
 net.ipv4.tcp_wmem = 8192 65536 16777216
 net.ipv4.udp_wmem_min = 16384
-
-# Increase the maximum and default receive socket buffer size
-net.core.rmem_max=16777216
-net.core.rmem_default=262144
 
 # Increase the maximum and default receive socket buffer size
 net.core.rmem_max=16777216
@@ -225,6 +259,9 @@ net.ipv4.ipfrag_low_thresh = 446464
 
 # Increase the maximum amount of option memory buffers
 net.core.optmem_max = 65536
+
+# Increase the maximum number of skb-heads to be cached
+#net.core.hot_list_length = 1024
 
 # don't cache ssthresh from previous connection
 net.ipv4.tcp_no_metrics_save = 1
@@ -274,30 +311,43 @@ net.core.dev_weight = 64
 # This will enusre that immediatly subsequent connections use the new values
 net.ipv4.route.flush = 1
 net.ipv6.route.flush = 1
+
 EOT
+
+if [ -d /etc/sysctl.d ]
+then
+    cat /tmp/sysctl.conf > /etc/sysctl.d/90-bluc.conf
+elif [ -z "$(grep B-LUC /etc/sysctl.conf)" ]
+then
+    cat /tmp/sysctl.conf >> /etc/sysctl.d/90-bluc.conf
 fi
 service procps start
 
 #-------------------------------------------------------------------------
 # Set readahead for disks                                                 
-SECTORS=$((16 * 512))
-if [ -e /proc/mdstat ]                                                    
-then                                                                      
+SECTORS=$((32 * 512))
+# MegaRaid controller:
+if [ -x /opt/MegaRAID/MegaCli/MegaCli64 ]
+then
+    SECTORS=$(/opt/MegaRAID/MegaCli/MegaCli64 -AdpAllInfo -aAll -NoLog | awk '/^Max Data Transfer Size/ {print $(NF-1)}')
+fi
+if [ -e /proc/mdstat ]                                                   
+then                                                                     
     for DEV in $(awk '/^md/ {gsub(/\[[0-9]\]/,"");print $1" "$5" "$6}' /proc/mdstat)
-    do                                                                              
-        RA=$(blockdev --getra /dev/$DEV)                                        
-        [ $RA -ne $SECTORS ] && blockdev --setra $SECTORS /dev/$DEV                   
-    done                                                                            
-fi                                                                                      
-for DEV in $( ls /dev/[hs]d[a-z][0-9] | awk '{sub(/\/dev\//,"");printf "%s ",$1}')      
-do                                                                                      
-    RA=$(blockdev --getra /dev/$DEV)                                                
-    [ $RA -ne $SECTORS ] && blockdev --setra $SECTORS /dev/$DEV                           
-done                                                                                    
-for DEV in $( ls /dev/mapper/* | awk '{sub(/\/dev\/mapper\//,"");printf "%s ",$1}')     
-do                                                                                      
-    [ "T$DEV" = 'Tcontrol' ] && continue                                            
-    RA=$(blockdev --getra /dev/mapper/$DEV)                                         
+    do                                                                             
+        RA=$(blockdev --getra /dev/$DEV)                                       
+        [ $RA -ne $SECTORS ] && blockdev --setra $SECTORS /dev/$DEV                  
+    done                                                                           
+fi                                                                                     
+for DEV in $( ls /dev/[hs]d[a-z][0-9] | awk '{sub(/\/dev\//,"");printf "%s ",$1}')     
+do                                                                                     
+    RA=$(blockdev --getra /dev/$DEV)                                               
+    [ $RA -ne $SECTORS ] && blockdev --setra $SECTORS /dev/$DEV                          
+done                                                                                   
+for DEV in $( ls /dev/mapper/* | awk '{sub(/\/dev\/mapper\//,"");printf "%s ",$1}')    
+do                                                                                     
+    [ "T$DEV" = 'Tcontrol' ] && continue                                           
+    RA=$(blockdev --getra /dev/mapper/$DEV)                                        
     [ $RA -ne $SECTORS ] && blockdev --setra $SECTORS /dev/mapper/$DEV
 done
 if [ -d /dev/etherd ]
@@ -310,14 +360,17 @@ then
     done
 fi
 
-for FS in $(mount | awk '/ext[234]/ {print $1}')
+# Filesystem errors force a reboot
+for FS in $(awk '/ext[234]/ {print $1}' /proc/mounts)
 do
     tune2fs -e panic -c 5 -i 1m $FS
 done
 
 #-------------------------------------------------------------------------
 # Distribute the IRQ handling across cores
-cat << EOT > /etc/default/irqbalance
+if [ -x /usr/sbin/irqbalance ]
+then
+    cat << EOT > /etc/default/irqbalance
 # Configuration for the irqbalance daemon
 # See: http://www.irqbalance.org/documentation.php
 
@@ -354,6 +407,14 @@ then
     done
 fi
 EOT
+fi
+
+# Distribute the process load that all the cores in a
+# processor package are busy before distributing the
+# process load to other processor packages
+[ -e /sys/devices/system/cpu/sched_mc_power_savings ] && echo 1 > /sys/devices/system/cpu/sched_mc_power_savings
+# Same for multi-threading
+[ -e /sys/devices/system/cpu/sched_smt_power_savings ] && echo 1 > /sys/devices/system/cpu/sched_smt_power_savings
 
 #-------------------------------------------------------------------------
 # Set the correct I/O scheduler
@@ -399,9 +460,76 @@ do
 done
 
 #-------------------------------------------------------------------------
+# Set up the greeting files
+echo "Setting greeting files:  /etc/issue  /etc/issue.net"
+/bin/cat << EOT > /etc/issue
+#
+#
+#  WARNING:  You must have specific authorization to access
+#           this machine.  Unauthorized users will be logged,
+#           monitored, and reported to the proper authorities!
+#
+EOT
+/bin/cat /etc/issue > /etc/issue.net
+
+# Local sessions
+/bin/cat << EOT >> /etc/issue
+# You are on $HOSTNAME (port \l) at \d.
+# This host runs \s, release \r.
+#
+EOT
+
+#-------------------------------------------------------------------------
+# Setup security (kernel) auditing
+AC=$(which auditctl)
+if [ ! -z "$AC" ]
+then
+    ARCH32=$(uname -m)
+    # See also: http://security.blogoverflow.com/tag/standards/
+    $AC -D
+    $AC -b 1024
+#    $AC -a exit,always -F arch=$ARCH32 -S unlink -S rmdir -k deletion
+#    $AC -a exit,always -F arch=$ARCH32 -S setrlimit -k system-limits
+
+    $AC -a always,exit -F arch=$ARCH32 -S adjtimex -S stime -S clock_settime -k time-change
+    $AC -a always,exit -F arch=$ARCH32 -S adjtimex -S settimeofday -S clock_settime -k time-change
+
+    $AC -a always,exit -F arch=$ARCH32 -S sethostname -S setdomainname -k system-locale
+
+    $AC -w /etc/group -p wa -k identity
+    $AC -w /etc/passwd -p wa -k identity
+    $AC -w /etc/shadow -p wa -k identity
+    [ -f /etc/sudoers ] && $AC -w /etc/sudoers -p wa -k identity
+
+#    $AC -w /var/run/utmp -p wa -k session
+#    $AC -w /var/log/wtmp -p wa -k session
+#    $AC -w /var/log/btmp -p wa -k session
+
+    [ -d /etc/selinux ] && $AC -w /etc/selinux/ -p wa -k MAC-policy
+
+    $AC -w /tmp -p x -k suspicious-exec
+    if [ -d /var/www ]
+    then
+        $AC -w /var/www -p wa -k suspicious-write
+        $AC -w /var/www -p x -k suspicious-exec
+    fi
+fi
+
+#-------------------------------------------------------------------------
 # Watch system performance
 [ -x /usr/local/sbin/SysMon.pl ] && /usr/local/sbin/SysMon.pl -D -a ateam@digitaltowpath.org -o /var/tmp
 
 #-------------------------------------------------------------------------
+# Let the administrators know about the reboot
+THISHOST=$(hostname -f)
+NOW=$(date)
+logger -i -p warning -t system -- $THISHOST booted at $NOW 
+if [ -x /usr/bin/mailx ]
+then
+    echo "$THISHOST booted at $NOW" | mailx -s "$THISHOST boot" root 
+fi
+
+#-------------------------------------------------------------------------
+# We are done
 exit 0
 
