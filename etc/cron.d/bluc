@@ -1,0 +1,6 @@
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/sbin:/sbin:/usr/local/bin:/usr/bin:/bin
+MAILTO=root
+##############################################################################
+* * * * *	root	[ -x /usr/local/sbin/LocalHealthCheck.sh ] && /usr/local/sbin/LocalHealthCheck.sh
+*/3 * * * * root [ -x /usr/local/sbin/MailQWarning.sh ] && /usr/local/sbin/MailQWarning.sh
