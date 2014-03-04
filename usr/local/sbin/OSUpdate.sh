@@ -42,16 +42,8 @@ NUP=$(awk '/upgraded, .* newly/ {print $1+$3}' /var/log/DistUpgradeList)
 if [ $NUP -gt 25 ]
 then
     # New and upgraded packages exceed a combined 25
-    sendmail -t << EOT
-Subject: Outdated packages on $THISHOST
-From: root@THISDOMAIN
-To: root@$THISDOMAIN
-Date: $NOW
-Importance: Medium
-X-Priority: Medium
-X-Alert-Priority: Medium
-X-Alert-Host: $THISHOST
-
+    sendemail -q -f root@$THISHOST -u "Outdated packages on $THISHOST" \
+        -t root@$THISDOMAIN -s mail -o tls=no << EOT
 $NUP new or upgradable packages on $THISHOST
 See /var/log/DistUpgradeList for details
 
