@@ -4,3 +4,6 @@ MAILTO=root
 ##############################################################################
 * * * * *	root	[ -x /usr/local/sbin/LocalHealthCheck.sh ] && /usr/local/sbin/LocalHealthCheck.sh
 */3 * * * * root [ -x /usr/local/sbin/MailQWarning.sh ] && /usr/local/sbin/MailQWarning.sh
+# System backups
+18 1 * * *      root    [ -x /usr/local/sbin/LiSysCo.sh ] && /usr/local/sbin/LiSysCo.sh
+18 3,15 * * *   root    [ -x /usr/local/sbin/LiHome.sh ] && //usr/local/sbin/LiHome.sh
