@@ -147,7 +147,7 @@ fi
 # Local config
 (echo "Backing up localconfig "$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
 echo "# Zimbra Local Configuration (incl. passwords)" > $BKP_DIR/localconfig
-zmlocalconfig -s >> $BKP_DIR/localconfig 2>> $LOGFILE
+nice zmlocalconfig -s >> $BKP_DIR/localconfig 2>> $LOGFILE
 
 # Backup all databases
 (echo "Backing up all databases "$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
@@ -160,7 +160,7 @@ grep pass $BKP_DIR/localconfig > $BKP_DIR/passwords
 
 # All COS data (sorted by name)
 INDEX=0
-zmprov gac | sort > /tmp/$$
+nice zmprov gac | sort > /tmp/$$
 for COS in $(< /tmp/$$)
 do
     (echo "Backing up COS '$COS' "$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
@@ -178,7 +178,7 @@ wait
 
 # All servers (sorted by name)
 INDEX=0
-zmprov gas | sort > /tmp/$$
+nice zmprov gas | sort > /tmp/$$
 for SERVER in $(< /tmp/$$)
 do
     (echo "Backing up server '$SERVER' "$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
@@ -196,7 +196,7 @@ wait
 
 # All domains (sorted by name)
 INDEX=0
-zmprov gad | sort > /tmp/$$
+nice zmprov gad | sort > /tmp/$$
 for DOMAIN in $(< /tmp/$$)
 do
     (echo "Backing up domain '$DOMAIN' "$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
@@ -214,7 +214,7 @@ wait
 
 # All accounts (sorted by size in descending order)
 INDEX=0
-zmprov gqu $ZIMBRA_HOSTNAME | cut -d' ' -f1,3 | sort -k 2 -rn | cut -d' ' -f1 > /tmp/$$
+nice zmprov gqu $ZIMBRA_HOSTNAME | cut -d' ' -f1,3 | sort -k 2 -rn | cut -d' ' -f1 > /tmp/$$
 TOTAL_USERS=$(sed -n '$=' /tmp/$$)
 CUR_USER_NUM=1
 for ACCOUNT in $(< /tmp/$$)
@@ -236,7 +236,7 @@ wait
 
 # All distribution lists (sorted by name)
 INDEX=0
-zmprov gadl | sort > /tmp/$$
+nice zmprov gadl | sort > /tmp/$$
 for LIST in $(< /tmp/$$)
 do
     (echo "Backing up list '$LIST' "$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
@@ -254,7 +254,7 @@ wait
 
 # All calendars (sorted by name)
 INDEX=0
-zmprov gacr | sort > /tmp/$$
+nice zmprov gacr | sort > /tmp/$$
 for CAL in $(< /tmp/$$)
 do
     (echo "Backing up calendar '$CAL' "$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
