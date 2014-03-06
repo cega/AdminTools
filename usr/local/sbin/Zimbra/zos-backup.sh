@@ -164,12 +164,15 @@ grep pass $BKP_DIR/localconfig > $BKP_DIR/passwords
 INDEX=0
 LoadCheck
 nice zmprov gac | sort > /tmp/$$
+TOTAL_COSS=$(sed -n '$=' /tmp/$$)
+CUR_COS_NUM=1
 for COS in $(< /tmp/$$)
 do
     LoadCheck
-    (echo "Backing up COS '$COS' "$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
+    (echo "Backing up COS '$COS' ($CUR_COS_NUM of $TOTAL_COSS) "$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
     echo "# Zimbra Class of Service: $COS" > $BKP_DIR/cos.$COS
     nice zmprov gc $COS >> $BKP_DIR/cos.$COS 2>> $LOGFILE &
+    CUR_COS_NUM=$(($CUR_COS_NUM + 1))
     INDEX=$(($INDEX + 1))
     if [ $INDEX -gt 1 ]
     then
@@ -184,12 +187,15 @@ wait
 INDEX=0
 LoadCheck
 nice zmprov gas | sort > /tmp/$$
+TOTAL_SRVS=$(sed -n '$=' /tmp/$$)
+CUR_SRV_NUM=1
 for SERVER in $(< /tmp/$$)
 do
     LoadCheck
-    (echo "Backing up server '$SERVER' "$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
+    (echo "Backing up server '$SERVER' ($CUR_SRV_NUM of $TOTAL_SRVS) "$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
     echo "# Zimbra Server: $SERVER" > $BKP_DIR/server.$SERVER
     nice zmprov gs $SERVER >> $BKP_DIR/server.$SERVER 2>> $LOGFILE &
+    CUR_SRV_NUM=$(($CUR_SRV_NUM + 1))
     INDEX=$(($INDEX + 1))
     if [ $INDEX -gt 1 ]
     then
@@ -204,12 +210,15 @@ wait
 INDEX=0
 LoadCheck
 nice zmprov gad | sort > /tmp/$$
+TOTAL_DOMS=$(sed -n '$=' /tmp/$$)
+CUR_DOM_NUM=1
 for DOMAIN in $(< /tmp/$$)
 do
     LoadCheck
-    (echo "Backing up domain '$DOMAIN' "$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
+    (echo "Backing up domain '$DOMAIN' ($CUR_DOM_NUM of $TOTAL_DOMS) "$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
     echo "# Zimbra Domain: $DOMAIN" > $BKP_DIR/domain.$DOMAIN
     nice zmprov gd $DOMAIN >> $BKP_DIR/domain.$DOMAIN 2>> $LOGFILE &
+    CUR_DOM_NUM=$(($CUR_DOM_NUM + 1))
     INDEX=$(($INDEX + 1))
     if [ $INDEX -gt 1 ]
     then
@@ -231,8 +240,8 @@ do
     [[ $ACCOUNT = ham.* ]] && continue
     [[ $ACCOUNT = spam.* ]] && continue
     [[ $ACCOUNT = virus-quarantine.* ]] && continue
-    CUR_USER_NUM=$(($CUR_USER_NUM + 1))
     BkpAccount $BKP_DIR $ACCOUNT $TOTAL_USERS $CUR_USER_NUM &
+    CUR_USER_NUM=$(($CUR_USER_NUM + 1))
     INDEX=$(($INDEX + 1))
     if [ $INDEX -gt 1 ]
     then
@@ -247,12 +256,15 @@ wait
 INDEX=0
 LoadCheck
 nice zmprov gadl | sort > /tmp/$$
+TOTAL_LISTS=$(sed -n '$=' /tmp/$$)
+CUR_LIST_NUM=1
 for LIST in $(< /tmp/$$)
 do
     LoadCheck
-    (echo "Backing up list '$LIST' "$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
+    (echo "Backing up list '$LIST' ($CUR_LIST_NUM of $TOTAL_LISTS) "$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
     echo "# Zimbra Distribution List: $LIST" > $BKP_DIR/list.$LIST
     nice zmprov gdl $LIST >> $BKP_DIR/list.$LIST 2>> $LOGFILE &
+    CUR_LIST_NUM=$(($CUR_LIST_NUM + 1))
     INDEX=$(($INDEX + 1))
     if [ $INDEX -gt 1 ]
     then
@@ -267,12 +279,15 @@ wait
 INDEX=0
 LoadCheck
 nice zmprov gacr | sort > /tmp/$$
+TOTAL_CALS=$(sed -n '$=' /tmp/$$)
+CUR_CAL_NUM=1
 for CAL in $(< /tmp/$$)
 do
     LoadCheck
-    (echo "Backing up calendar '$CAL' "$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
+    (echo "Backing up calendar '$CAL' ($CUR_CAL_NUM of $TOTAL_CALS) "$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
     echo "# Zimbra Calendar: $CAL" > $BKP_DIR/calendar.$CAL
     nice zmprov gcr $CAL >> $BKP_DIR/calendar.$CAL 2>> $LOGFILE &
+    CUR_CAL_NUM=$(($CUR_CAL_NUM + 1))
     INDEX=$(($INDEX + 1))
     if [ $INDEX -gt 1 ]
     then
