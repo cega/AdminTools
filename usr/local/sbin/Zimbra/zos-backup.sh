@@ -81,7 +81,7 @@ function BkpAccount() {
     local TOTAL_USERS=$3
     local CUR_USER_NUM=$4
 
-    (echo "Backing up account $ACCOUNT ($CUR_USER_NUM of $TOTAL_USERS)"$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
+    (echo "Backing up account $ACCOUNT ($CUR_USER_NUM of $TOTAL_USERS) "$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
 
     # Save the account's metadata (incl. password)
     nice zmprov -l ga $ACCOUNT >> $BKP_DIR/account.$ACCOUNT 2>> $LOGFILE
@@ -311,7 +311,7 @@ nice find /backup -maxdepth 1 -type f \( -name "${THISHOST}.backup.*.tgz" -o -na
 
 # Gzip all file not yet compressed
 LoadCheck
-nice find $BKP_DIR -type f '!' -name "*gz" -print0 | xargs -0rI XXX -n 40 gzip -9f XXX
+nice find $BKP_DIR -type f '!' -name "*gz" -print0 | xargs -0rn 40 -I XXX gzip -9f XXX
 
 # Tar up the whole backup directory and delete it
 LoadCheck
