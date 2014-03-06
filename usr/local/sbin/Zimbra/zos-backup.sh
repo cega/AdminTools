@@ -145,14 +145,16 @@ then
 fi
 
 # Local config
+LoadCheck
 (echo "Backing up localconfig "$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
 echo "# Zimbra Local Configuration (incl. passwords)" > $BKP_DIR/localconfig
 nice zmlocalconfig -s >> $BKP_DIR/localconfig 2>> $LOGFILE
 
 # Backup all databases
+LoadCheck
 (echo "Backing up all databases "$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
 ROOT_SQL_PASSWORD=$(awk '/^mysql_root_password/ {print $NF}' $BKP_DIR/localconfig)
-/opt/zimbra/mysql/bin/mysqldump -S /opt/zimbra/db/mysql.sock \
+nice /opt/zimbra/mysql/bin/mysqldump -S /opt/zimbra/db/mysql.sock \
   -u root --password=$ROOT_SQL_PASSWORD -A | gzip -c > $BKP_DIR/fullzimbra.sql.gz
  
 # Backups
@@ -160,9 +162,11 @@ grep pass $BKP_DIR/localconfig > $BKP_DIR/passwords
 
 # All COS data (sorted by name)
 INDEX=0
+LoadCheck
 nice zmprov gac | sort > /tmp/$$
 for COS in $(< /tmp/$$)
 do
+    LoadCheck
     (echo "Backing up COS '$COS' "$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
     echo "# Zimbra Class of Service: $COS" > $BKP_DIR/cos.$COS
     nice zmprov gc $COS >> $BKP_DIR/cos.$COS 2>> $LOGFILE &
@@ -178,9 +182,11 @@ wait
 
 # All servers (sorted by name)
 INDEX=0
+LoadCheck
 nice zmprov gas | sort > /tmp/$$
 for SERVER in $(< /tmp/$$)
 do
+    LoadCheck
     (echo "Backing up server '$SERVER' "$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
     echo "# Zimbra Server: $SERVER" > $BKP_DIR/server.$SERVER
     nice zmprov gs $SERVER >> $BKP_DIR/server.$SERVER 2>> $LOGFILE &
@@ -196,9 +202,11 @@ wait
 
 # All domains (sorted by name)
 INDEX=0
+LoadCheck
 nice zmprov gad | sort > /tmp/$$
 for DOMAIN in $(< /tmp/$$)
 do
+    LoadCheck
     (echo "Backing up domain '$DOMAIN' "$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
     echo "# Zimbra Domain: $DOMAIN" > $BKP_DIR/domain.$DOMAIN
     nice zmprov gd $DOMAIN >> $BKP_DIR/domain.$DOMAIN 2>> $LOGFILE &
@@ -214,6 +222,7 @@ wait
 
 # All accounts (sorted by size in descending order)
 INDEX=0
+LoadCheck
 nice zmprov gqu $ZIMBRA_HOSTNAME | cut -d' ' -f1,3 | sort -k 2 -rn | cut -d' ' -f1 > /tmp/$$
 TOTAL_USERS=$(sed -n '$=' /tmp/$$)
 CUR_USER_NUM=1
@@ -236,9 +245,11 @@ wait
 
 # All distribution lists (sorted by name)
 INDEX=0
+LoadCheck
 nice zmprov gadl | sort > /tmp/$$
 for LIST in $(< /tmp/$$)
 do
+    LoadCheck
     (echo "Backing up list '$LIST' "$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
     echo "# Zimbra Distribution List: $LIST" > $BKP_DIR/list.$LIST
     nice zmprov gdl $LIST >> $BKP_DIR/list.$LIST 2>> $LOGFILE &
@@ -254,9 +265,11 @@ wait
 
 # All calendars (sorted by name)
 INDEX=0
+LoadCheck
 nice zmprov gacr | sort > /tmp/$$
 for CAL in $(< /tmp/$$)
 do
+    LoadCheck
     (echo "Backing up calendar '$CAL' "$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
     echo "# Zimbra Calendar: $CAL" > $BKP_DIR/calendar.$CAL
     nice zmprov gcr $CAL >> $BKP_DIR/calendar.$CAL 2>> $LOGFILE &
@@ -271,6 +284,7 @@ done
 wait
 
 # Some misc. files
+LoadCheck
 (echo "Backing up misc files "$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
 [ -f /usr/local/sbin/LocalHealthCheck.sh ] && cp /usr/local/sbin/LocalHealthCheck.sh $BKP_DIR
 [ -f /usr/local/etc/zos-MailRouting.cfg ] && cp /usr/local/etc/zos-MailRouting.cfg $BKP_DIR
@@ -317,6 +331,7 @@ then
     then
         U=  # Username for pscp
         P=  # Password for pscp
+        LoadCheck
         pscp -q -batch -4 -l $U -pw $P /backup/${THISHOST}.zosss.tgz $DB1_BKP:
     fi
 fi
