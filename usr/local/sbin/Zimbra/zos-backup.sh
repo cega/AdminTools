@@ -231,7 +231,7 @@ do
     [[ $ACCOUNT = ham.* ]] && continue
     [[ $ACCOUNT = spam.* ]] && continue
     [[ $ACCOUNT = virus-quarantine.* ]] && continue
-    CUR_USER_NUM=$(($CUR_USER_NO + 1))
+    CUR_USER_NUM=$(($CUR_USER_NUM + 1))
     BkpAccount $BKP_DIR $ACCOUNT $TOTAL_USERS $CUR_USER_NUM &
     INDEX=$(($INDEX + 1))
     if [ $INDEX -gt 1 ]
