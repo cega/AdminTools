@@ -32,9 +32,34 @@ THISDOMAIN=${THISHOST#*.}
 TH_SHORT=${THISHOST%%.*}
 
 # Define all important system configs
+# -> Can be overwritten/expanded in "filelist" (see below)
 FILELIST='/etc/firehol/firehol.conf /etc/network/interfaces
           /etc/hosts /etc/hostname /etc/rc.local
           /etc/cron.d/* /usr/local/*'
+
+# RSYNC share to upload backup to
+# -> if empty, no upload happens
+# -> Can be set in "filelist" (see below)
+RSYNC_SHARE=''
+
+# Get possible program options
+VERBOSE=0
+REVERSE=0
+while getopts rv OPTION
+do
+    case ${OPTION} in
+    r)  REVERSE=1
+        ;;
+    v)  VERBOSE=1
+        ;;
+    *)  echo "Usage: $0 [options]"
+        echo "         -v              Show progress messages"
+        echo "         -r              Restore files"
+        echo "         Example: -R 'rhost::upload'"
+        ;;
+    esac
+done
+shift $((OPTIND - 1))
 
 # Allow local hosts to overwrite or expand the FILELIST
 if [ -s /usr/local/etc/LiSysCo.filelist ]
@@ -53,31 +78,14 @@ else
 
 #EX## Get postfix confs if present
 #EX#[ -d /etc/postfix ] && FILELIST="\$FILELIST /etc/postfix/*"
+
+# Define the rsync fileshare (overwrites the command line option)
+# Format "host::share"
+# Can use these variables:
+# THISHOST, THISDOMAIN, TH_SHORT
+# RSYNC_SHARE=host::share
 EOT
 fi
-
-# Get possible program options
-VERBOSE=0
-REVERSE=0
-RSYNC_SHARE=''
-while getopts rvR: OPTION
-do
-    case ${OPTION} in
-    r)  REVERSE=1
-        ;;
-    v)  VERBOSE=1
-        ;;
-    R)  RSYNC_SHARE=$OPTARG
-        ;;
-    *)  echo "Usage: $0 [options]"
-        echo "         -v              Show progress messages"
-        echo "         -r              Restore files"
-        echo "         -R rsync-share  Specify rsync share for upload"
-        echo "         Example: -R 'rhost::upload'"
-        ;;
-    esac
-done
-shift $((OPTIND - 1))
 
 # Create the directory for the system config backup
 LSC=/usr/local/LiSysCo
