@@ -100,6 +100,18 @@ then
     # Get a list of installed packages
     dpkg --get-selections > /tmp/Installed.Packages.txt
 
+    # Detect backups created by zos-backup.sh
+    if [ -s /backup/zos-backup.log ]
+    then
+        # Also capture the zimbra backup files
+        if [[ $(tail -n 1 /backup/zos-backup.log) = *done:* ]]
+        then
+            ZIMBRA_BACKUPS='/backup/*t[ag][zr]'
+        fi
+    else
+        ZIMBRA_BACKUPS=''
+    fi
+
     # Save all relevant system configs
     rm -f $LSC/*tar.bz2
     cd /
@@ -114,27 +126,36 @@ then
         --absolute-names $TARTOTALS --ignore-failed-read \
         --exclude=/usr/local/LiSysCo/* \
         --file $LSC/${THISHOST}.LiSysCo.tar.bz2 $FILELIST /tmp/Installed.Packages.txt
-    RETCODE=$?
-    if [ $RETCODE -eq 0 -a ! -z "$RSYNC_SHARE" ] 
+    if [ $? -eq 0 ] 
     then
-        # Upload the backup file
-        if [ -z "$DEBUG" ]
+        LISYSCO_BACKUPS='/usr/local/LiSysCo/*'
+    else
+        LISYSCO_BACKUPS=''
+    fi
+    if [ ! -z "$RSYNC_SHARE" ] 
+    then
+        # Only upload files if we have at least one
+        if [ ! -z "$ZIMBRA_BACKUPS" -o ! -z "$LISYSCO_BACKUPS" ]
         then
-            ST=$(($RANDOM % 1800))
-            [ $ST -lt 600 ] && ST=$(($ST + 600))
-            sleep $ST
+            # Upload the backup file(s)
+            if [ -z "$DEBUG" ]
+            then
+                ST=$(($RANDOM % 1800))
+                [ $ST -lt 600 ] && ST=$(($ST + 600))
+                sleep $ST
+            fi
+            TRY=0
+            while [ 1 ]
+            do
+                # Add 30 seconds per try to the timeout
+                rsync --timeout=$((180 + $TRY * 30)) -a4 $LISYSCO_BACKUPS $ZIMBRA_BACKUPS $RSYNC_SHARE
+                RETCODE=$?
+                [ $RETCODE -eq 0 ] && break
+                # Try up to 3 times
+                TRY=$(($TRY + 1))
+                [ $TRY -gt 2 ] && break
+            done
         fi
-        TRY=0
-        while [ 1 ]
-        do
-            # Add 30 seconds per try to the timeout
-            rsync --timeout=$((180 + $TRY * 30)) -a4 /usr/local/LiSysCo/* $RSYNC_SHARE
-            RETCODE=$?
-            [ $RETCODE -eq 0 ] && break
-            # Try up to 3 times
-            TRY=$(($TRY + 1))
-            [ $TRY -gt 2 ] && break
-        done
     fi
 else
     #-----------------------------------------------------------
