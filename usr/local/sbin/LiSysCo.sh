@@ -148,7 +148,7 @@ then
             while [ 1 ]
             do
                 # Add 30 seconds per try to the timeout
-                rsync --timeout=$((180 + $TRY * 30)) -a4 $LISYSCO_BACKUPS $ZIMBRA_BACKUPS $RSYNC_SHARE
+                rsync $DEBUG --timeout=$((180 + $TRY * 30)) -a4 $LISYSCO_BACKUPS $ZIMBRA_BACKUPS $RSYNC_SHARE
                 RETCODE=$?
                 [ $RETCODE -eq 0 ] && break
                 # Try up to 3 times
