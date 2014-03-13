@@ -426,6 +426,9 @@ then
 elif [ ! -z "$(egrep 'KVM|QEMU' /proc/cpuinfo)" -o ! -z "$(grep Bochs /sys/class/dmi/id/bios_vendor)" ]
 then
     IS_VIRTUAL=2
+elif [ ! -z "$(grep '^flags[[:space:]]*.*hypervisor' /proc/cpuinfo)" ]
+then
+    IS_VIRTUAL=3
 fi
 cd /sys/block
 for DEV in [vhs]d?
