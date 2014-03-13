@@ -58,6 +58,9 @@ then
 elif [ ! -z "$(grep QEMU /proc/cpuinfo)" -a ! -z "$(grep Bochs /sys/class/dmi/id/bios_vendor)" ]
 then
     IS_VIRTUAL=2
+elif [ ! -z "$(grep '^flags[[:space:]]*.*hypervisor' /proc/cpuinfo)" ]
+then
+    IS_VIRTUAL=3
 fi
 if [ $IS_VIRTUAL -ne 0 ]
 then
