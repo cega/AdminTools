@@ -1,0 +1,9 @@
+The scripts in here can be used to create specific appliances.  They install
+the necessary software and got through initial configuration steps.
+
+Legend:
+
+ms - EMail server using postfix, mysql, postfixadmin and dovecot
+mx - MX server with antivirus and antispam filtering (inbound email)
+backupmx - Backup MX server with antivirus filtering (inbound email)
+mo - Email relay for sending emails (outbound email)
