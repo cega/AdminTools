@@ -160,7 +160,7 @@ interface eth0 internal_1 src "${LOCALNET}/${CIDRMASK}" dst ${LOCALIP}
 
         # Here are the services listening on eth0.
         # TODO: Normally, you will have to remove those not needed.
-        server "ssh" accept src "${home_net} ${bluc}"
+        server "ssh" accept src "\${home_net} \${bluc}"
         #server "smtp imaps smtps https" accept
         server ping accept
 
@@ -184,7 +184,7 @@ interface eth0 external_1 src not "${LOCALNET}/${CIDRMASK}" dst ${LOCALIP}
 
         # Here are the services listening on eth0.
         # TODO: Normally, you will have to remove those not needed.
-        server "ssh" accept src "${home_net} ${bluc}"
+        server "ssh" accept src "\${home_net} \${bluc}"
         #server "smtp imaps smtps http https" accept
         server ping accept
 
