@@ -486,7 +486,6 @@ MAXMSGSIZE=$(postconf -h message_size_limit)
 QUEUE_MINFREE=$((2 * $MAXMSGSIZE))
 postconf -e 'message_size_limit = '$MAXMSGSIZE
 postconf -e 'queue_minfree = '$QUEUE_MINFREE
-postconf -e 'local_transport = error:no local mail delivery'
 
 # We are a relay
 postconf -e 'mydestination = '

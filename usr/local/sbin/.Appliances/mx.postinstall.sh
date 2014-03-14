@@ -4,6 +4,18 @@
 ################################################################
 
 ##########
+# Email flows:
+# Incoming port            Component  Checks performed  Outgoing port
+# *:25 (smtpd)             postfix    ppolicyd, rbl     127.0.0.1:11125 (lmtp)
+# *:465 (smtpd[s])         postfix    ppolicyd, rbl     127.0.0.1:11125 (lmtp)
+# 127.0.0.1:11125 (lmtpd)  dspam      antispam          127.0.0.1:10025 (smtp)
+# 127.0.0.1:10025 (smtpd)  amavisd    antivirus         127.0.0.1:10026 (smtp)
+# 127.0.0.1:10026 (smtpd)  postfix                      *:25 (smtp)
+# *:587 (submission)       postfix                      *.25 (smtp)
+# Note: 465 and 587 are not allowed from outside LAN
+#       465 requires authentication
+
+##########
 # NETWORK parameters
 ##########
 # See: https://forums.gentoo.org/viewtopic-t-888736-start-0.html
@@ -107,7 +119,6 @@ MAXMSGSIZE=$(postconf -h message_size_limit)
 QUEUE_MINFREE=$((2 * $MAXMSGSIZE))
 postconf -e 'message_size_limit = '$MAXMSGSIZE
 postconf -e 'queue_minfree = '$QUEUE_MINFREE
-postconf -e 'local_transport = error:no local mail delivery'
 
 # We are a relay
 postconf -e 'mydestination = '

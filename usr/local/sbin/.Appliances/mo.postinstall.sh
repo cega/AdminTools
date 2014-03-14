@@ -4,6 +4,12 @@
 ################################################################
 
 ##########
+# Email flows:
+# Incoming port            Component  Checks performed  Outgoing port
+# *:25 (smtpd)             postfix                      *.25 (smtp)
+# *:587 (submission)       postfix                      *.25 (smtp)
+
+##########
 # NETWORK parameters
 ##########
 # See: https://forums.gentoo.org/viewtopic-t-888736-start-0.html
@@ -94,7 +100,7 @@ postconf -e 'smtpd_client_restrictions = permit_mynetworks'
 # - Check 'sender_access' for rejected IPs or addresses
 # - Reject senders without full-qualified domain names
 # - Check 'mx_access' for rejected IPs
-postconf -e "smtpd_sender_restrictions = check_sender_access hash:$PF_CD/sender_access,reject_non_fqdn_sender,permit"
+postconf -e "smtpd_sender_restrictions = check_sender_access pcre:$PF_CD/sender_access,reject_non_fqdn_sender,permit"
 
 # Enable useful rejections for unknown recipients
 # - Allow everything from legitimate networks
@@ -165,10 +171,9 @@ postmap $PF_CD/mx_access
 if [ ! -s $PF_CD/sender_access ]
 then
     cat << EOT > $PF_CD/sender_access
-# Allowed sender addresses in hash formt
+# Allowed sender addresses in pcre format
 EOT
 fi
-postmap $PF_CD/sender_access
 
 # Ensure that the header and body checks are perl regex tables
 postconf -e 'header_checks = pcre:'$PF_CD/header_checks
@@ -319,7 +324,6 @@ postconf -e 'smtp_tls_mandatory_ciphers = medium'
 postconf -e 'smtp_tls_mandatory_exclude_ciphers ='
 postconf -e 'smtp_tls_mandatory_protocols = SSLv3, TLSv1'
 postconf -e 'smtp_tls_note_starttls_offer = no'
-postconf -e 'smtp_tls_per_site ='
 postconf -e 'smtp_tls_policy_maps ='
 postconf -e 'smtp_tls_scert_verifydepth = 5'
 postconf -e 'smtp_tls_secure_cert_match = nexthop, dot-nexthop'
@@ -364,16 +368,15 @@ postconf -e 'smtpd_tls_loglevel = 1'
 postconf -e 'smtp_tls_loglevel = 1'
 
 # Postfix per-recipient domain TLS settings
-postconf -e 'smtp_tls_per_site = hash:'$PF_CD/smtp_tls_per_site
+postconf -e 'smtp_tls_per_site = pcre:'$PF_CD/smtp_tls_per_site
 # Create some dummy settings if necessary
 if [ ! -s $PF_CD/smtp_tls_per_site ]
 then
     cat << EOT > $PF_CD/smtp_tls_per_site
-# TLS settings for specific destinations
+# TLS settings for specific destinations in pcre format
 # See: http://www.postfix.org/TLS_README.html
 EOT
 fi
-postmap $PF_CD/smtp_tls_per_site
 
 # Setup useful names
 postconf -e 'myorigin = mail.'$LOCALDOMAIN
