@@ -42,6 +42,15 @@ FILELIST='/etc/firehol/firehol.conf /etc/network/interfaces
 # -> Can be set in "filelist" (see below)
 RSYNC_SHARE=''
 
+# To run the rsync upload through a SSH tunnel,
+#  assign values to ALL FOUR variables below
+# -> Should really be done in "filelist" (see below)
+# -> After being set, run this script by hand once
+SSH_SERVER=''	# The SSH server
+REAL_SERVER=''	# The real server behind the SSH server
+SSH_USERID=''	# The userid on the SSH server
+SSH_PASSWD=''	# The password for the SSH server
+
 # Get possible program options
 VERBOSE=0
 REVERSE=0
@@ -83,7 +92,15 @@ else
 # Format "host::share"
 # Can use these variables:
 # THISHOST, THISDOMAIN, TH_SHORT
-# RSYNC_SHARE=host::share
+#RSYNC_SHARE=host::share
+
+# To run the rsync upload through a SSH tunnel,
+#  assign values to ALL FOUR variables below
+# -> After being set, run this script by hand once
+#SSH_SERVER='1.2.3.4'		# The SSH server
+#REAL_SERVER='127.0.0.1'	# The real server behind the SSH server
+#SSH_USERID='joe'		# The userid on the SSH server
+#SSH_PASSWD='J03_pw'		# The password for the SSH server
 EOT
 fi
 
@@ -144,17 +161,54 @@ then
                 [ $ST -lt 600 ] && ST=$(($ST + 600))
                 sleep $ST
             fi
+
+            if [ ! -z "$SSH_SERVER" -a ! -z "$REAL_SERVER" -a ! -z "$SSH_USERID" -a ! -z "$SSH_PASSWD" ]
+            then
+                # Create the local SSH key
+                mkdir -p $HOME/.ssh
+                LOCAL_KEY_FILE=$HOME/.ssh/rsync_id
+                if [ ! -s $LOCAL_KEY_FILE ]
+                then
+                    ssh-keygen -q -t rsa -b 2048 -f $LOCAL_KEY_FILE -N ''
+                    cat << EOT
+Run this command as "root" now:
+ssh-copy-id -i $LOCAL_KEY_FILE "$SSH_USERID@$SSH_SERVER"
+EOT
+                    exit 1
+                fi
+
+                # Set up SSH tunnel
+                RSYNC_PORT=2873
+                if [ -s $LOCAL_KEY_FILE ]
+                then
+                    ssh $DEBUG -N -p 22 -i $LOCAL_KEY_FILE "$SSH_USERID@$SSH_SERVER" -L $RSYNC_PORT:127.0.0.1:873 &
+                else
+                    echo "No way to set up SSH tunnel"
+                    exit 1
+                fi
+                sleep 10
+                SSHPID=$(ps -wefH  | awk "/ss[h].*$SSH_SERVER/"' {print $2}')
+            else
+                # no SSH tunnel
+                SSHPID=''
+                RSYNC_PORT=873
+            fi
+
             TRY=0
             while [ 1 ]
             do
                 # Add 30 seconds per try to the timeout
-                rsync $DEBUG --timeout=$((180 + $TRY * 30)) -a4 $LISYSCO_BACKUPS $ZIMBRA_BACKUPS $RSYNC_SHARE
+                rsync $DEBUG --timeout=$((180 + $TRY * 30)) --archive --ipv4 --port $RSYNC_PORT --bwlimit 1000 \
+                  $LISYSCO_BACKUPS $ZIMBRA_BACKUPS $RSYNC_SHARE
                 RETCODE=$?
                 [ $RETCODE -eq 0 ] && break
                 # Try up to 3 times
                 TRY=$(($TRY + 1))
                 [ $TRY -gt 2 ] && break
             done
+
+            # Tear down the SSH tunnel (if present)
+            [ -z "$SSHPID" ] || kill $SSHPID
         fi
     fi
 else
