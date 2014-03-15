@@ -8,8 +8,11 @@
 # Incoming port            Component  Checks performed  Outgoing port
 # *:25 (smtpd)             postfix                      127.0.0.1:10025 (smtp)
 # *:587 (submission)       postfix                      127.0.0.1:10025 (smtp)
+# *:465 (smtps)            postfix                      *.25 (smtp)
 # 127.0.0.1:10025 (smtpd)  clamsmtpd  antivirus         127.0.0.1:10026 (smtp)
-# 127.0.0.1:10025 (smtp)   postfix                      *.25 (smtp)
+# 127.0.0.1:10026 (smtp)   postfix                      *.25 (smtp)
+# Note: 465 is not allowed from outside LAN
+#       465 requires authentication
 
 ##########
 # NETWORK parameters
