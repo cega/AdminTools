@@ -31,6 +31,18 @@ BLUE='\e[01;34m'
 CYAN='\e[01;36m'
 NC='\e[0m' # No Color
 
+# Sanity checks
+if [[ $(postconf -h local_transport) != error:* ]]
+then
+    echo 'This is NOT a backup MX server'
+    exit 1
+fi
+if [ ! -z "$(postconf -h mydestination)" ]
+then
+    echo 'This is NOT a backup MX server'
+    exit 1
+fi
+
 #####################################################################
 # Add a new MX domain
 #####################################################################
@@ -88,7 +100,23 @@ ListMX() {
     echo
     echo -e "${BLUE}List of defined MX email domains:${NC}"
     echo
-    cat $PF_CD/relays
+    for D in $(grep 'OK' $PF_CD/relays)
+    do
+        [ "T$D" = 'TOK' ] && continue
+
+        # Show the domain and possible specific mail routing
+        echo "Domain '$D':"
+        MR=$(awk "/$D.*relay/"'{print $2}' $PF_CD/transport | sort -u)
+        if [ -z "$MR" ]
+        then
+            # Show the specific mail routing
+            host -t mx $D
+        else
+            # Look up the MX record(s) for the domain
+            echo "$D mail is forced to use $MR"
+        fi
+        echo
+    done
     read -p 'Press <ENTER> to continue'
 }
 
