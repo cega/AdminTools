@@ -334,6 +334,13 @@ if [ ! -s $PF_CD/transport ]
 then
     cat << EOT > $PF_CD/transport
 # Recipient based routing using regular expressions
+# Format:
+#  user@domain <nexthop>
+#  domain      <nexthop>
+#  .domain     <nexthop>
+# where <nexthop> is "relay:[IPAddress]:Port"
+# Example:
+# /btoy1\.net$/ relay:[24.97.81.129]:25
 EOT
 fi
 vi $PF_CD/transport
@@ -344,6 +351,12 @@ if [ ! -s $PF_CD/sender_mail_routing ]
 then
     cat << EOT > $PF_CD/sender_mail_routing
 # Sender based routing using regular expressions
+# Format:
+#  user@domain <nexthop>
+#  @domain     <nexthop>
+# where <nexthop> is "[IPAddress]"
+# Example:
+# /@btoy1\.net$/ [24.97.81.129]
 EOT
 fi
 vi $PF_CD/sender_mail_routing
@@ -660,7 +673,13 @@ if [ ! -s $PF_CD/smtp_tls_per_site ]
 then
     cat << EOT > $PF_CD/smtp_tls_per_site
 # TLS settings for specific destinations in pcre format
-# See: http://www.postfix.org/TLS_README.html
+# Examples:
+# do.ma.in  <action>
+#  where <action> is one of these:
+#  none    - no encryption, use clear text transmission
+#  may     - use encryption when possible (default) 
+#  encrypt - only deliver over encrypted connection
+# For details see: http://www.postfix.org/TLS_README.html
 EOT
 fi
 
