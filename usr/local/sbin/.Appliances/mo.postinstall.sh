@@ -8,11 +8,8 @@
 # Incoming port            Component  Checks performed  Outgoing port
 # *:25 (smtpd)             postfix                      127.0.0.1:10025 (smtp)
 # *:587 (submission)       postfix                      127.0.0.1:10025 (smtp)
-# *:465 (smtps)            postfix                      *.25 (smtp)
 # 127.0.0.1:10025 (smtpd)  clamsmtpd  antivirus         127.0.0.1:10026 (smtp)
-# 127.0.0.1:10026 (smtp)   postfix                      *.25 (smtp)
-# Note: 465 is not allowed from outside LAN
-#       465 requires authentication
+# 127.0.0.1:10025 (smtp)   postfix                      *.25 (smtp)
 
 ##########
 # NETWORK parameters
@@ -35,6 +32,19 @@ function cdr2mask ()
 }
 
 LOCALDOMAIN=$(hostname -d)
+while [ -z "$LOCALDOMAIN" ]
+do
+    read -p 'Local domain name ? ' LD
+    [ -z "$LD" ] && continue
+    LOCALDOMAIN=$LD
+    cat << EOT >> /tmp/hosts
+127.0.0.1	localhost
+
+EOT
+    grep -v '^127' /etc/hosts >> /tmp/hosts
+    cat /tmp/hosts > /etc/hosts
+    vi /etc/hosts
+done
 
 LOCALIP=$(ifconfig eth0 | sed -rn 's/.*r:([^ ]+) .*/\1/p')
 LOCALMASK=$(ifconfig eth0 | sed -n -e 's/.*Mask:\(.*\)$/\1/p')
@@ -42,6 +52,25 @@ CIDRMASK=$(mask2cdr $LOCALMASK)
 # From: http://www.routertech.org/viewtopic.php?t=1609
 l="${LOCALIP%.*}";r="${LOCALIP#*.}";n="${LOCALMASK%.*}";m="${LOCALMASK#*.}"
 LOCALNET=$((${LOCALIP%%.*}&${LOCALMASK%%.*})).$((${r%%.*}&${m%%.*})).$((${l##*.}&${n##*.})).$((${LOCALIP##*.}&${LOCALMASK##*.}))
+
+LOCALDOMAIN=$(hostname -d)
+LOCALHOST=$(hostname -s)
+while [ -z "$LOCALDOMAIN" ]
+do
+    # No domain name set yet
+    read -p 'Local domain name ? ' LD
+    [ -z "$LD" ] && continue
+
+    # Adjust /etc/hosts to correctly show the domain name
+    LOCALDOMAIN=$LD
+    cat << EOT >> /tmp/hosts
+127.0.0.1	localhost
+$LOCALIP	$LOCALHOST.$LOCALDOMAIN $LOCALHOST
+EOT
+    grep -v '^127' /etc/hosts >> /tmp/hosts
+    cat /tmp/hosts > /etc/hosts
+    vi /etc/hosts
+done
 
 ###########
 # clamsmtpd
@@ -312,7 +341,7 @@ mailman   unix  -       n       n       -       -       pipe
   flags=FR user=list argv=/usr/lib/mailman/bin/postfix-to-mailman.py \${nexthop} \${user}
 retry     unix  -       -       -       -       -       error
 EOT
-postconf -e 'content_filter = clamsmtp:[127.0.0.1]:10026'
+postconf -e 'content_filter = clamsmtp:[127.0.0.1]:10025'
 
 # Setup postfix transport table (recipient based routing)
 postconf -e 'transport_maps = pcre:'$PF_CD/transport
@@ -356,6 +385,10 @@ if [ ! -s $PF_CD/mynetworks ]
 then
     cat << EOT > $PF_CD/mynetworks
 # Sending client IPs as single line entries
+# ALWAYS allow localhost
+127.0.0.1
+# And local network
+$LOCALNET/$CIDRMASK
 EOT
 fi
 
