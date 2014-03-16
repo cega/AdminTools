@@ -31,21 +31,6 @@ function cdr2mask ()
    echo ${1-0}.${2-0}.${3-0}.${4-0}
 }
 
-LOCALDOMAIN=$(hostname -d)
-while [ -z "$LOCALDOMAIN" ]
-do
-    read -p 'Local domain name ? ' LD
-    [ -z "$LD" ] && continue
-    LOCALDOMAIN=$LD
-    cat << EOT >> /tmp/hosts
-127.0.0.1	localhost
-
-EOT
-    grep -v '^127' /etc/hosts >> /tmp/hosts
-    cat /tmp/hosts > /etc/hosts
-    vi /etc/hosts
-done
-
 LOCALIP=$(ifconfig eth0 | sed -rn 's/.*r:([^ ]+) .*/\1/p')
 LOCALMASK=$(ifconfig eth0 | sed -n -e 's/.*Mask:\(.*\)$/\1/p')
 CIDRMASK=$(mask2cdr $LOCALMASK)
