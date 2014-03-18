@@ -43,6 +43,21 @@ then
     exit 1
 fi
 
+# Define the editor
+if [ -z "$EDITOR" ]
+then
+    # Use a flavor of "vi"
+    if [ -x /usr/bin/vim.tiny ]
+    then
+        M_EDITOR=vim.tiny
+    else
+        M_EDITOR=vi
+    fi
+else
+    # Use the editor specified in the environment variable
+    M_EDITOR=$EDITOR
+fi
+
 #####################################################################
 # Check whether argument is a valid IP address
 #####################################################################
