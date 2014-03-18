@@ -753,7 +753,6 @@ postconf -e 'smtp_tls_mandatory_ciphers = medium'
 postconf -e 'smtp_tls_mandatory_exclude_ciphers ='
 postconf -e 'smtp_tls_mandatory_protocols = SSLv3, TLSv1'
 postconf -e 'smtp_tls_note_starttls_offer = no'
-postconf -e 'smtp_tls_per_site ='
 postconf -e 'smtp_tls_policy_maps ='
 postconf -e 'smtp_tls_scert_verifydepth = 5'
 postconf -e 'smtp_tls_secure_cert_match = nexthop, dot-nexthop'
@@ -811,6 +810,23 @@ postconf -e 'myorigin = mail.'$LOCALDOMAIN
 postconf -e 'smtp_helo_name = mail.'$LOCALDOMAIN
 postconf -e 'mydomain = '$LOCALDOMAIN
 postconf -e 'mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 '$LOCALNET/$CIDRMASK
+
+# Postfix per-recipient domain TLS settings
+postconf -e 'smtp_tls_per_site = pcre:'$PF_CD/smtp_tls_per_site
+# Create some dummy settings if necessary
+if [ ! -s $PF_CD/smtp_tls_per_site ]
+then
+    cat << EOT > $PF_CD/smtp_tls_per_site
+# TLS settings for specific destinations in pcre format
+# Examples:
+# do.ma.in  <action>
+#  where <action> is one of these:
+#  none    - no encryption, use clear text transmission
+#  may     - use encryption when possible (default) 
+#  encrypt - only deliver over encrypted connection
+# For details see: http://www.postfix.org/TLS_README.html
+EOT
+fi
 
 cat << EOT > $PF_CD/make
 #!/bin/bash
