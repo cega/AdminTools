@@ -77,7 +77,7 @@ is_validip()
 #####################################################################
 # Add a new MX domain
 #####################################################################
-AddMX() {
+M_AddMX() {
     echo
     echo -ne " ${BLUE}What is the name of the new MX domain${NC}"
     read -p '? ' MXD
@@ -114,7 +114,7 @@ AddMX() {
 #####################################################################
 # Delete a new MX domain
 #####################################################################
-DelMX() {
+M_DelMX() {
     echo
     echo -ne " ${BLUE}What is the name of the MX domain to delete${NC}"
     read -p '? ' MXD
@@ -138,7 +138,7 @@ DelMX() {
 #####################################################################
 # List MX domains
 #####################################################################
-ListMX() {
+M_ListMX() {
     echo
     echo -e "${BLUE}List of defined MX email domains:${NC}"
     echo
@@ -159,6 +159,26 @@ ListMX() {
         fi
         echo
     done
+    read -p 'Press <ENTER> to continue'
+}
+
+#####################################################################
+# Manage SMTP TLS settings
+#####################################################################
+M_smtp_tls() {
+    cp $PF_CD/smtp_tls_per_site /tmp/$$
+    $M_EDITOR /tmp/$$
+
+    echo 'Changed settings:'
+    diff -wu /tmp/$$ $PF_CD/smtp_tls_per_site
+    [ $? -eq 0 ] && return
+
+    read -p 'Apply the changes [y/N] ? ' YN
+    [ -z "$YN" ] && return
+    [ "T${YN^^}" = 'TY' ] || return
+
+    cat /tmp/$$ > $PF_CD/smtp_tls_per_site
+    (cd $PF_CD; ./make; postfix reload)
     read -p 'Press <ENTER> to continue'
 }
 
@@ -205,13 +225,15 @@ ExecOption() {
     case $UI in
     0)     exit 0
            ;;
-    11)    AddMX
+    11)    M_AddMX
            ;;
-    12)    DelMX
+    12)    M_DelMX
            ;;
-    13)    ListMX
+    13)    M_ListMX
            ;;
-    22)    Renew_SSL_cert
+    21)    Renew_SSL_cert
+           ;;
+    22)    M_smtp_tls
            ;;
     31)    M_main
            ;;
@@ -261,9 +283,11 @@ do
     echo -e "   ${CYAN}12${NC} - Delete MX domain"
     echo -e "   ${CYAN}13${NC} - List MX domains"
     echo
-    echo -e "   ${CYAN}22${NC} - Renew self-signed SSL certificate"
+    echo -e "   ${CYAN}21${NC} - Renew self-signed SSL certificate"
+    echo -e "   ${CYAN}22${NC} - Manage outbound encryption"
     echo
     echo -e "   ${CYAN}31${NC} - Manage ALL postfix settings"
+    echo
     read -p '  Please select your choice : ' UI
     echo
     ExecOption $UI
