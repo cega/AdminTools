@@ -44,6 +44,22 @@ then
 fi
 
 #####################################################################
+# Check whether argument is a valid IP address
+#####################################################################
+is_validip()
+{
+    case "$*" in
+    ""|*[!0-9.]*|*[!0-9]) return 1 ;;
+    esac
+
+    local IFS=.  ## local is bash-specific
+    set -- $*
+    [ $# -eq 4 ] &&
+        [ ${1:-666} -le 255 ] && [ ${2:-666} -le 255 ] &&
+        [ ${3:-666} -le 255 ] && [ ${4:-666} -le 254 ]
+}
+
+#####################################################################
 # Add a new MX domain
 #####################################################################
 AddMX() {
@@ -61,6 +77,17 @@ AddMX() {
 
         echo "# $MXD added ${NOW}:" >> $PF_CD/relay_recipients
         echo "@${MXD} OK" >> $PF_CD/relay_recipients
+
+        read -p "Real mail server for '$MXD' ? " RS
+        if [ ! -z "$RS" ]
+        then
+            is_validip $RS
+            if [ $? -eq 0 ]
+            then
+                echo "# $MXD added ${NOW}:" >> $PF_CD/transport
+                echo "$MXD relay:[$RS]:25" >> $PF_CD/transport
+            fi
+        fi
 
         (cd $PF_CD; ./make)
     else
@@ -81,7 +108,7 @@ DelMX() {
     then
         echo -e "${RED}Domain '$MXD' does not exist${NC}"
     else
-        for F in relays relay_recipients
+        for F in relays relay_recipients transport
         do
             sed -e "/$MXD/d" $PF_CD/$F > /tmp/$$
             cat /tmp/$$ > $PF_CD/$F
@@ -121,6 +148,40 @@ ListMX() {
 }
 
 #####################################################################
+# Renew self-signed certificate
+#####################################################################
+Renew_SSL_cert() {
+
+    CreateSelfSignedCert.sh
+    (cd $PF_CD; ./make; postfix reload)
+    read -p 'Press <ENTER> to continue'
+}
+
+#####################################################################
+# Manage ALL postfix settings
+#####################################################################
+M_main() {
+    read -p 'This dangerous - are you sure you want to continue [y/N] ? ' YN
+    [ -z "$YN" ] && return
+    [ "T${YN^^}" = 'TY' ] || return
+
+    cp $PF_CD/main.cf /tmp/$$
+    $M_EDITOR /tmp/$$
+
+    echo 'Changed settings:'
+    diff -wu /tmp/$$ $PF_CD/main.cf
+    [ $? -eq 0 ] && return
+
+    read -p 'Apply the changes [y/N] ? ' YN
+    [ -z "$YN" ] && return
+    [ "T${YN^^}" = 'TY' ] || return
+
+    cat /tmp/$$ > $PF_CD/main.cf
+    (cd $PF_CD; ./make; postfix reload)
+    read -p 'Press <ENTER> to continue'
+}
+
+#####################################################################
 # Execute given option
 #####################################################################
 ExecOption() {
@@ -129,11 +190,15 @@ ExecOption() {
     case $UI in
     0)     exit 0
            ;;
-    1)     AddMX
+    11)    AddMX
            ;;
-    2)     DelMX
+    12)    DelMX
            ;;
-    3)     ListMX
+    13)    ListMX
+           ;;
+    22)    Renew_SSL_cert
+           ;;
+    31)    M_main
            ;;
     esac
 }
@@ -177,11 +242,15 @@ do
     echo
     echo -e "   ${CYAN}0${NC} - Exit program"
     echo
-    echo -e "   ${CYAN}1${NC} - Add MX domain"
-    echo -e "   ${CYAN}2${NC} - Delete MX domain"
-    echo -e "   ${CYAN}3${NC} - List MX domains"
+    echo -e "   ${CYAN}11${NC} - Add MX domain"
+    echo -e "   ${CYAN}12${NC} - Delete MX domain"
+    echo -e "   ${CYAN}13${NC} - List MX domains"
     echo
+    echo -e "   ${CYAN}22${NC} - Renew self-signed SSL certificate"
+    echo
+    echo -e "   ${CYAN}31${NC} - Manage ALL postfix settings"
     read -p '  Please select your choice : ' UI
+    echo
     ExecOption $UI
 done
 
