@@ -175,9 +175,9 @@ ExecOption() {
            ;;
     12)    M_sender_mail_routing
            ;;
-    21)    M_smtp_tls
+    21)    Renew_SSL_cert
            ;;
-    22)    Renew_SSL_cert
+    22)    M_smtp_tls
            ;;
     31)    M_main
            ;;
@@ -228,8 +228,8 @@ do
     echo -e "   ${CYAN}11${NC} - Manage destination based email routing" 
     echo -e "   ${CYAN}12${NC} - Manage source based email routing"
     echo
-    echo -e "   ${CYAN}21${NC} - Manage outbound encryption"
-    echo -e "   ${CYAN}22${NC} - Renew self-signed SSL certificate"
+    echo -e "   ${CYAN}21${NC} - Renew self-signed SSL certificate"
+    echo -e "   ${CYAN}22${NC} - Manage outbound encryption"
     echo
     echo -e "   ${CYAN}31${NC} - Manage ALL postfix settings"
     echo
