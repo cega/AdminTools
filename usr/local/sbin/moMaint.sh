@@ -54,7 +54,7 @@ M_mynetworks() {
     $M_EDITOR /tmp/$$
 
     echo 'Changed settings:'
-    diff -wu /tmp/$$ $PF_CD/mynetworks
+    diff -wu $PF_CD/mynetworks /tmp/$$
     [ $? -eq 0 ] && return
 
     read -p 'Apply the changes [y/N] ? ' YN
@@ -74,7 +74,7 @@ M_transport() {
     $M_EDITOR /tmp/$$
 
     echo 'Changed settings:'
-    diff -wu /tmp/$$ $PF_CD/transport
+    diff -wu $PF_CD/transport /tmp/$$
     [ $? -eq 0 ] && return
 
     read -p 'Apply the changes [y/N] ? ' YN
@@ -94,7 +94,7 @@ M_sender_mail_routing() {
     $M_EDITOR /tmp/$$
 
     echo 'Changed settings:'
-    diff -wu /tmp/$$ $PF_CD/sender_mail_routing
+    diff -wu $PF_CD/sender_mail_routing /tmp/$$
     [ $? -eq 0 ] && return
 
     read -p 'Apply the changes [y/N] ? ' YN
@@ -114,7 +114,7 @@ M_smtp_tls() {
     $M_EDITOR /tmp/$$
 
     echo 'Changed settings:'
-    diff -wu /tmp/$$ $PF_CD/smtp_tls_per_site
+    diff -wu $PF_CD/smtp_tls_per_site /tmp/$$
     [ $? -eq 0 ] && return
 
     read -p 'Apply the changes [y/N] ? ' YN
@@ -148,7 +148,7 @@ M_main() {
     $M_EDITOR /tmp/$$
 
     echo 'Changed settings:'
-    diff -wu /tmp/$$ $PF_CD/main.cf
+    diff -wu $PF_CD/main.cf /tmp/$$
     [ $? -eq 0 ] && return
 
     read -p 'Apply the changes [y/N] ? ' YN
@@ -175,9 +175,9 @@ ExecOption() {
            ;;
     12)    M_sender_mail_routing
            ;;
-    21)    Renew_SSL_cert
+    21)    M_smtp_tls
            ;;
-    22)    M_smtp_tls
+    22)    Renew_SSL_cert
            ;;
     31)    M_main
            ;;
@@ -228,8 +228,8 @@ do
     echo -e "   ${CYAN}11${NC} - Manage destination based email routing" 
     echo -e "   ${CYAN}12${NC} - Manage source based email routing"
     echo
-    echo -e "   ${CYAN}21${NC} - Renew self-signed SSL certificate"
-    echo -e "   ${CYAN}22${NC} - Manage outbound encryption"
+    echo -e "   ${CYAN}21${NC} - Manage outbound encryption"
+    echo -e "   ${CYAN}22${NC} - Renew self-signed SSL certificate"
     echo
     echo -e "   ${CYAN}31${NC} - Manage ALL postfix settings"
     echo
