@@ -610,6 +610,7 @@ postconf -e 'address_verify_negative_refresh_time = 60m'
 # Postfix TLS settings
 postconf -e 'smtpd_client_new_tls_session_rate_limit = 20'
 postconf -e 'smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache'
+postconf -e 'smtp_tls_per_site ='
 postconf -e 'smtp_tls_CAfile ='
 postconf -e 'smtp_tls_CApath ='
 postconf -e 'smtp_tls_cert_file ='
@@ -667,19 +668,26 @@ postconf -e 'smtpd_tls_loglevel = 1'
 postconf -e 'smtp_tls_loglevel = 1'
 
 # Postfix per-recipient domain TLS settings
-postconf -e 'smtp_tls_per_site = pcre:'$PF_CD/smtp_tls_per_site
+postconf -e 'smtp_tls_policy_maps = hash:'$PF_CD/smtp_tls_per_site
 # Create some dummy settings if necessary
 if [ ! -s $PF_CD/smtp_tls_per_site ]
 then
     cat << EOT > $PF_CD/smtp_tls_per_site
 # TLS settings for specific destinations in pcre format
 # Examples:
-# do.ma.in  <action>
+#  user@domain  <action>
+#  domain       <action>
+#  .domain      <action>
+#  IP address   <action>  (needed when specific email routing is in place)
+#  [IP address] <action>  (needed when specific email routing is in place)
 #  where <action> is one of these:
 #  none    - no encryption, use clear text transmission
 #  may     - use encryption when possible (default) 
 #  encrypt - only deliver over encrypted connection
-# For details see: http://www.postfix.org/TLS_README.html
+# For details see: http://www.postfix.org/postconf.5.html#smtp_tls_policy_maps
+# Examples:
+# [192.168.25.25] none
+# [24.97.81.129] encrypt
 EOT
 fi
 
