@@ -138,8 +138,16 @@ then
         echo ' -> Saving important configuration infos'
         TARTOTALS='--totals'
     fi
-    export BZIP2='-s'
-    nice tar --create --preserve-permissions --bzip2 \
+
+    # Use multi-core bzip2 if possible
+    if [ -x /usr/bin/pbzip2 ]
+    then
+        COMP='--use-compress-program="pbzip2 -5"'
+    else
+        export BZIP2='-5'
+        COMP='--bzip2'
+    fi
+    nice tar --create --preserve-permissions $COMP \
         --absolute-names $TARTOTALS --ignore-failed-read \
         --exclude=/usr/local/LiSysCo/* \
         --file $LSC/${THISHOST}.LiSysCo.tar.bz2 $FILELIST /tmp/Installed.Packages.txt
