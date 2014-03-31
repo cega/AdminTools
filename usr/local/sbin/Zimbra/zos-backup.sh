@@ -42,6 +42,10 @@ else
         ZIMBRA_NE=0
 fi
 
+# Use the multi-core version of gzip if possible
+GZIP='gzip'
+[ -x /usr/bin/pigz ] && GZIP='pigz'
+
 # The list of system config files
 FILELIST='/etc/firehol/firehol.conf /etc/network/interfaces
           /etc/hosts /etc/hostname /etc/resolv.conf
@@ -155,7 +159,7 @@ LoadCheck
 (echo "Backing up all databases "$(date '+%D %T')', l'$(uptime | cut -dl -f2-)) >> $LOGFILE
 ROOT_SQL_PASSWORD=$(awk '/^mysql_root_password/ {print $NF}' $BKP_DIR/localconfig)
 nice /opt/zimbra/mysql/bin/mysqldump -S /opt/zimbra/db/mysql.sock \
-  -u root --password=$ROOT_SQL_PASSWORD -A | gzip -c > $BKP_DIR/fullzimbra.sql.gz
+  -u root --password=$ROOT_SQL_PASSWORD -A | $GZIP -c > $BKP_DIR/fullzimbra.sql.gz
  
 # Backups
 grep pass $BKP_DIR/localconfig > $BKP_DIR/passwords
@@ -311,7 +315,7 @@ nice find /backup -maxdepth 1 -type f \( -name "${THISHOST}.backup.*.tgz" -o -na
 
 # Gzip all file not yet compressed
 LoadCheck
-nice find $BKP_DIR -type f '!' -name "*gz" -print0 | xargs -0rn 40 -I XXX gzip -9f XXX
+nice find $BKP_DIR -type f '!' -name "*gz" -print0 | xargs -0rn 40 -I XXX $GZIP -9f XXX
 
 # Tar up the whole backup directory and delete it
 LoadCheck
