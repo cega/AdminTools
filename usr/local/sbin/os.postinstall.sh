@@ -51,6 +51,37 @@ function cdr2mask ()
    echo ${1-0}.${2-0}.${3-0}.${4-0}
 }
 
+# Determine the Linux distribution
+LINUX_DIST=''
+INSTALL_PROG=''
+if [ -s /etc/debian_version ]
+then
+    LINUX_DIST='DEBIAN'
+    INSTALL_PROG='apt-get'
+elif [ -s /etc/redhat-release ]
+then
+    LINUX_DIST='REDHAT'
+    INSTALL_PROG='yum'
+
+    # Install the necessary redhat packages
+    $INSTALL_PROG list > /tmp/redhat.packages.list
+    SRV_ARCH=$(uname -i)
+    if [ -z "$(grep '^rpmforge-release.'$SRV_ARCH /tmp/redhat.packages.list)" ]
+    then
+        # Get "rpmforge" repository and install it
+        curl -L 'http://pkgs.repoforge.org/rpmforge-release/rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm' \
+            > /tmp/rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm	
+        rpm --import http://apt.sw.be/RPM-GPG-KEY.dag.txt
+        $INSTALL_PROG install /tmp/rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm
+        # Reget the list of install packages
+        $INSTALL_PROG list > /tmp/redhat.packages.list
+    fi
+else
+    echo "Unsupported Linux distribution"
+    exit 1
+fi
+
+# Is this a virtual guest?
 IS_VIRTUAL=0
 if [ ! -z "$(grep -m1 VMware /proc/scsi/scsi)" ]
 then
@@ -62,26 +93,47 @@ elif [ ! -z "$(grep '^flags[[:space:]]*.*hypervisor' /proc/cpuinfo)" ]
 then
     IS_VIRTUAL=3
 fi
-if [ $IS_VIRTUAL -ne 0 ]
+if [ $IS_VIRTUAL -ne 0 -a "T$LINUX_DIST" = 'TDEBIAN' ]
 then
   # Install the "virtual" kernel
-  apt-get install linux-image-virtual linux-headers-virtual
+  $INSTALL_PROG install linux-image-virtual linux-headers-virtual
 
   # Remove the "generic" kernel
-  apt-get --purge remove linux-image-generic linux-headers-generic
+  $INSTALL_PROG --purge remove linux-image-generic linux-headers-generic
 fi
 
 # Remove the PPP packages
-apt-get --purge remove ppp pppconfig pppoeconf
+if [ "T$LINUX_DIST" = 'TDEBIAN' ]
+then
+    $INSTALL_PROG --purge remove ppp pppconfig pppoeconf
+else
+    $INSTALL_PROG erase ppp pppconfig pppoeconf
+fi
 
 # Install specific packages
-apt-get install xtables-addons-dkms firehol joe ethtool linuxlogo libunix-syslog-perl openntpd libio-socket-ssl-perl sendemail python-software-properties chkrootkit perltidy haveged
+if [ "T$LINUX_DIST" = 'TDEBIAN' ]
+then
+    $INSTALL_PROG install sudo xtables-addons-dkms firehol joe ethtool linuxlogo libunix-syslog-perl openntpd libio-socket-ssl-perl sendemail python-software-properties chkrootkit perltidy haveged
+else
+    $INSTALL_PROG install sudo ethtool perltidy
+fi
 
 # Activate the HPN patched SSH
-apt-add-repository ppa:w-rouesnel/openssh-hpn
+[ "T$LINUX_DIST" = 'TDEBIAN' ] && apt-add-repository ppa:w-rouesnel/openssh-hpn
+
+if [ $(grep -c '^processor' /proc/cpuinfo) -gt 1 ]
+then
+    # Install multi-core versions of gzip and bzip2
+    $INSTALL_PROG install pigz pbzip2
+fi
 
 # Update and upgrade
-apt-get update; apt-get autoremove; apt-get dist-upgrade
+$INSTALL_PROG update
+if [ "T$LINUX_DIST" = 'TDEBIAN' ]
+then
+    $INSTALL_PROG autoremove
+    $INSTALL_PROG dist-upgrade
+fi
 
 # Adapt SSH configs
 [ -z "$(grep '^[[:space:]]*PermitRootLogin.*no' /etc/ssh/sshd_config)" ] && sed -ie 's/^[[:space:]]*PermitRootLogin.*yes/PermitRootLogin no/' /etc/ssh/sshd_config
@@ -98,16 +150,18 @@ EOT
     fi
 done
 
-# Adapt firehol config
-if [ -z "$(grep bellow /etc/firehol/firehol.conf)" ]
+if [ -d /etc/firehol ]
 then
-  LOCALIP=$(ifconfig eth0 | sed -n "s/.*inet addr:\([0-9.]*\).*/\1/p")
-  LOCALMASK=$(ifconfig eth0 | sed -n -e 's/.*Mask:\(.*\)$/\1/p')
-  # From: http://www.routertech.org/viewtopic.php?t=1609
-  l="${LOCALIP%.*}";r="${LOCALIP#*.}";n="${LOCALMASK%.*}";m="${LOCALMASK#*.}"
-  LOCALNET=$((${LOCALIP%%.*}&${LOCALMASK%%.*})).$((${r%%.*}&${m%%.*})).$((${l##*.}&${n##*.})).$((${LOCALIP##*.}&${LOCALMASK##*.}))
-  CIDRMASK=$(mask2cdr $LOCALMASK)
-  cat << EOT > /etc/firehol/firehol.conf
+    # Adapt firehol config
+    if [ -z "$(grep bellow /etc/firehol/firehol.conf)" ]
+    then
+        LOCALIP=$(ifconfig eth0 | sed -n "s/.*inet addr:\([0-9.]*\).*/\1/p")
+        LOCALMASK=$(ifconfig eth0 | sed -n -e 's/.*Mask:\(.*\)$/\1/p')
+        # From: http://www.routertech.org/viewtopic.php?t=1609
+        l="${LOCALIP%.*}";r="${LOCALIP#*.}";n="${LOCALMASK%.*}";m="${LOCALMASK#*.}"
+        LOCALNET=$((${LOCALIP%%.*}&${LOCALMASK%%.*})).$((${r%%.*}&${m%%.*})).$((${l##*.}&${n##*.})).$((${LOCALIP##*.}&${LOCALMASK##*.}))
+        CIDRMASK=$(mask2cdr $LOCALMASK)
+        cat << EOT > /etc/firehol/firehol.conf
 #!/sbin/firehol
 # : firehol.sh,v 1.273 2008/07/31 00:46:41 ktsaou Exp $
 #
@@ -197,55 +251,77 @@ interface eth0 external_1 src not "${LOCALNET}/${CIDRMASK}" dst ${LOCALIP}
         #       client services you really need.
         client all accept
 EOT
+    fi
+    sed -ie 's/^[[:space:]]*START_FIREHOL.*/START_FIREHOL=YES/' /etc/default/firehol
 fi
-sed -ie 's/^[[:space:]]*START_FIREHOL.*/START_FIREHOL=YES/' /etc/default/firehol
 
-# Install the audit daemon
-# (configuration - see /etc/rc.local)
-apt-get install auditd
-
-# Enable syslog via rsyslog
-if [ -s /etc/audisp/plugins.d/syslog.conf ]
+if [ "T$LINUX_DIST" = 'TDEBIAN' ]
 then
-    # Use the native syslog module for auditd
-    #  (secure enough since we use rsyslog)
-    sed -i -e 's/^active.*/active = yes/' /etc/audisp/plugins.d/syslog.conf
+    # Install the audit daemon
+    # (configuration - see /etc/rc.local)
+    $INSTALL_PROG install auditd
 
-    service auditd restart
-fi
-if [ -d /etc/rsyslog.d ]
-then
-    cat << EOT > /etc/rsyslog.d/40-auditd.conf
+    # Enable syslog via rsyslog
+    if [ -s /etc/audisp/plugins.d/syslog.conf ]
+    then
+        # Use the native syslog module for auditd
+        #  (secure enough since we use rsyslog)
+        sed -i -e 's/^active.*/active = yes/' /etc/audisp/plugins.d/syslog.conf
+
+        service auditd restart
+    fi
+    if [ -d /etc/rsyslog.d ]
+    then
+        cat << EOT > /etc/rsyslog.d/40-auditd.conf
 # Ex.: Suppress anything but "forbidden" messages
 #if (\$programname contains 'audispd') and (not (\$rawmsg contains ' forbidden')) then ~
 EOT
+    fi
 fi
 
-# Give the "opa" account a meaningful full name
-[ -z "$(getent passwd opa)" ] || chfn -f 'Linux Operator' opa
-
-# NFS server/client
-read -p 'Is this a NFS server [y|N] ? ' ANSWER
-if [ "T${ANSWER^^}" = 'TY' ]
+if [ -z "$(grep opa /etc/passwd)" ]
 then
-    apt-get install nfs-kernel-server
-    LOCALIP=$(ifconfig eth0 | sed -n "s/.*inet addr:\([0-9.]*\).*/\1/p")
-    LOCALMASK=$(ifconfig eth0 | sed -n -e 's/.*Mask:\(.*\)$/\1/p')
-    # From: http://www.routertech.org/viewtopic.php?t=1609
-    l="${LOCALIP%.*}";r="${LOCALIP#*.}";n="${LOCALMASK%.*}";m="${LOCALMASK#*.}"
-    LOCALNET=$((${LOCALIP%%.*}&${LOCALMASK%%.*})).$((${r%%.*}&${m%%.*})).$((${l##*.}&${n##*.})).$((${LOCALIP##*.}&${LOCALMASK##*.}))
-    read -p "Name or IP of NFS client(s) [ default=$LOCALNET/$LOCALMASK]: " NFS_CLIENT
-    [ -z "$NFS_CLIENT" ] && NFS_CLIENT="$LOCALNET/$LOCALMASK"
-    read -p 'Name of NFS share on server: ' NFS_SHARE
-    if [ ! -z "$NFS_SHARE" ]
+    # Create the operator account
+    useradd -s /bin/bash -m -c 'Linux Operator' opa
+    passwd opa
+else
+    # Give the "opa" account a meaningful full name
+    [ -z "$(getent passwd opa)" ] || chfn -f 'Linux Operator' opa
+fi
+if [ -d /etc/sudoers.d ]
+then
+    # Make sure that "opa" can execute "sudo"
+    cat << EOT > /etc/sudoers.d/opa
+## Allow opa to run any commands anywhere 
+opa    ALL=(ALL)       ALL
+EOT
+    chmod 440 /etc/sudoers.d/opa
+fi
+
+if [ "T$LINUX_DIST" = 'TDEBIAN' ]
+then
+    # NFS server/client
+    read -p 'Is this a NFS server [y|N] ? ' ANSWER
+    if [ "T${ANSWER^^}" = 'TY' ]
     then
-        # Finally - we have all the necessary infos
-        cat << EOT >> /etc/exports
+        $INSTALL_PROG install nfs-kernel-server
+        LOCALIP=$(ifconfig eth0 | sed -n "s/.*inet addr:\([0-9.]*\).*/\1/p")
+        LOCALMASK=$(ifconfig eth0 | sed -n -e 's/.*Mask:\(.*\)$/\1/p')
+        # From: http://www.routertech.org/viewtopic.php?t=1609
+        l="${LOCALIP%.*}";r="${LOCALIP#*.}";n="${LOCALMASK%.*}";m="${LOCALMASK#*.}"
+        LOCALNET=$((${LOCALIP%%.*}&${LOCALMASK%%.*})).$((${r%%.*}&${m%%.*})).$((${l##*.}&${n##*.})).$((${LOCALIP##*.}&${LOCALMASK##*.}))
+        read -p "Name or IP of NFS client(s) [ default=$LOCALNET/$LOCALMASK]: " NFS_CLIENT
+        [ -z "$NFS_CLIENT" ] && NFS_CLIENT="$LOCALNET/$LOCALMASK"
+        read -p 'Name of NFS share on server: ' NFS_SHARE
+        if [ ! -z "$NFS_SHARE" ]
+        then
+            # Finally - we have all the necessary infos
+            cat << EOT >> /etc/exports
 $NFS_SHARE  $NFS_CLIENT(rw,async,subtree_check,no_root_squash)
 EOT
-        exportfs -a
+            exportfs -a
 
-        cat << EOT > /etc/default/nfs-common
+            cat << EOT > /etc/default/nfs-common
 # If you do not set values for the NEED_ options, they will be attempted
 # autodetected; this should be sufficient for most people. Valid alternatives
 # for the NEED_ options are "yes" and "no".
@@ -266,28 +342,29 @@ NEED_IDMAPD=
 # Do you want to start the gssd daemon? It is required for Kerberos mounts.
 NEED_GSSD=
 EOT
-       service portmap restart
-    fi
-else
-    read -p 'Is this a NFS client [y|N] ? ' ANSWER
-    if [ "T${ANSWER^^}" = 'TY' ]
-    then
-        read -p 'Name or IP of NFS server: ' NFS_SRV
-        if [ ! -z "$NFS_SRV" ]
+           service portmap restart
+        fi
+    else
+        read -p 'Is this a NFS client [y|N] ? ' ANSWER
+        if [ "T${ANSWER^^}" = 'TY' ]
         then
-            read -p 'Name of NFS share on server: ' NFS_SHARE
-            if [ ! -z "$NFS_SHARE" ]
+            read -p 'Name or IP of NFS server: ' NFS_SRV
+            if [ ! -z "$NFS_SRV" ]
             then
-                read -p 'Mount point of NFS share on this server: ' NFS_MP
-                if [ ! -z "$NFS_MP" ]
+                read -p 'Name of NFS share on server: ' NFS_SHARE
+                if [ ! -z "$NFS_SHARE" ]
                 then
-                    # Finally - we have all the necessary infos
-                    mkdir -p $NFS_MP
-                    if [ -z "$(grep ^$NFS_SRV:$NFS_SHARE /etc/fstab)" ]
+                    read -p 'Mount point of NFS share on this server: ' NFS_MP
+                    if [ ! -z "$NFS_MP" ]
                     then
-                        cat << EOT >> /etc/fstab
+                        # Finally - we have all the necessary infos
+                        mkdir -p $NFS_MP
+                        if [ -z "$(grep ^$NFS_SRV:$NFS_SHARE /etc/fstab)" ]
+                        then
+                            cat << EOT >> /etc/fstab
 $NFS_SRV:$NFS_SHARE $NFS_MP nfs rw,vers=3,rsize=524288,wsize=524288,hard,proto=tcp,timeo=600,retrans=2,sec=sys,addr=$NFS_SRV 0 0
 EOT
+                        fi
                     fi
                 fi
             fi
