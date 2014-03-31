@@ -115,7 +115,7 @@ if [ "T$LINUX_DIST" = 'TDEBIAN' ]
 then
     $INSTALL_PROG install sudo xtables-addons-dkms firehol joe ethtool linuxlogo libunix-syslog-perl openntpd libio-socket-ssl-perl sendemail python-software-properties chkrootkit perltidy haveged
 else
-    $INSTALL_PROG install sudo ethtool perltidy system-config-network-tui system-config-firewall-tui
+    $INSTALL_PROG install sudo vim-minimal ethtool perltidy system-config-network-tui system-config-firewall-tui
 fi
 
 # Activate the HPN patched SSH
