@@ -115,7 +115,7 @@ if [ "T$LINUX_DIST" = 'TDEBIAN' ]
 then
     $INSTALL_PROG install sudo xtables-addons-dkms firehol joe ethtool linuxlogo libunix-syslog-perl openntpd libio-socket-ssl-perl sendemail python-software-properties chkrootkit perltidy haveged
 else
-    $INSTALL_PROG install sudo ethtool perltidy
+    $INSTALL_PROG install sudo ethtool perltidy system-config-network-tui system-config-firewall-tui
 fi
 
 # Activate the HPN patched SSH
@@ -257,6 +257,9 @@ interface eth0 external_1 src not "${LOCALNET}/${CIDRMASK}" dst ${LOCALIP}
 EOT
     fi
     sed -ie 's/^[[:space:]]*START_FIREHOL.*/START_FIREHOL=YES/' /etc/default/firehol
+elif [ -x /usr/bin/system-config-firewall-tui ]
+then
+    system-config-firewall-tui
 fi
 
 if [ "T$LINUX_DIST" = 'TDEBIAN' ]
