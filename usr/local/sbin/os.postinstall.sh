@@ -137,18 +137,22 @@ fi
 
 # Adapt SSH configs
 [ -z "$(grep '^[[:space:]]*PermitRootLogin.*no' /etc/ssh/sshd_config)" ] && sed -ie 's/^[[:space:]]*PermitRootLogin.*yes/PermitRootLogin no/' /etc/ssh/sshd_config
+[ -z "$(grep '^PermitRootLogin no' /etc/ssh/sshd_config)" ] && echo 'PermitRootLogin no' >> /etc/ssh/sshd_config
 sed -ie 's/^[[:space:]]*Protocol.*/Protocol 2/' /etc/ssh/ssh_config
 [ -z "$(grep '^[[:space:]]*Ciphers.*blowfish' /etc/ssh/ssh_config)" ] && echo 'Ciphers blowfish-cbc,aes256-cbc,aes192-cbc,aes128-cbc,3des-cbc,cast128-cbc,arcfour' >> /etc/ssh/ssh_config
-for F in ssh_config sshd_config
-do
-    if [ -z "$(grep '^TcpRcvBufPoll no' /etc/ssh/$F)" ]
-    then
+if [ "T$LINUX_DIST" = 'TDEBIAN' ]
+then
+    for F in ssh_config sshd_config
+    do
+        if [ -z "$(grep '^TcpRcvBufPoll no' /etc/ssh/$F)" ]
+        then
         cat << EOT >> /etc/ssh/$F
 # Enable large file transfers
 TcpRcvBufPoll no
 EOT
-    fi
-done
+        fi
+    done
+fi
 
 if [ -d /etc/firehol ]
 then
