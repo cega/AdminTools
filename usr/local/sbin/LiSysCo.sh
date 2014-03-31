@@ -142,7 +142,7 @@ then
     # Use multi-core bzip2 if possible
     if [ -x /usr/bin/pbzip2 ]
     then
-        COMP='--use-compress-program="pbzip2 -5"'
+        COMP='--use-compress-program=pbzip2'
     else
         export BZIP2='-5'
         COMP='--bzip2'
