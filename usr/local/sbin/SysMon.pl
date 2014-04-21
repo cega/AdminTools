@@ -1894,7 +1894,7 @@ $|++;
 print "$ProgName\n$CopyRight\n\n";
 
 # Get possible options
-getopts('a:dhi:Ds:o:') or ShowUsage();
+getopts('a:dhi:Ds:o:I:') or ShowUsage();
 ShowUsage() if ( ($opt_h) or ( $opt_i <= 0 ) );
 
 if ($opt_a)
