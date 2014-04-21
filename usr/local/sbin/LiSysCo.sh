@@ -206,7 +206,7 @@ EOT
             while [ 1 ]
             do
                 # Add 30 seconds per try to the timeout
-                rsync $DEBUG --timeout=$((180 + $TRY * 30)) --archive --ipv4 --port $RSYNC_PORT --bwlimit 1000 \
+                nice rsync $DEBUG --timeout=$((180 + $TRY * 30)) --archive --ipv4 --port $RSYNC_PORT --bwlimit 1000 \
                   $LISYSCO_BACKUPS $ZIMBRA_BACKUPS $RSYNC_SHARE
                 RETCODE=$?
                 [ $RETCODE -eq 0 ] && break
