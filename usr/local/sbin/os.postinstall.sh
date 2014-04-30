@@ -93,14 +93,6 @@ elif [ ! -z "$(grep '^flags[[:space:]]*.*hypervisor' /proc/cpuinfo)" ]
 then
     IS_VIRTUAL=3
 fi
-if [ $IS_VIRTUAL -ne 0 -a "T$LINUX_DIST" = 'TDEBIAN' ]
-then
-  # Install the "virtual" kernel
-  $INSTALL_PROG install linux-image-virtual linux-headers-virtual
-
-  # Remove the "generic" kernel
-  $INSTALL_PROG --purge remove linux-image-generic linux-headers-generic
-fi
 
 # Remove the PPP packages
 if [ "T$LINUX_DIST" = 'TDEBIAN' ]
