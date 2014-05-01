@@ -63,7 +63,7 @@ fi
 # Apply sysctl changes if not yet done
 if [ -s /etc/sysctl.d/90-bluc.conf ]
 then
-    [ $(sysctl -n kernel.sched_migration_cost) -ne 1000000 ] && sysctl -q -p /etc/sysctl.d/90-bluc.conf
+    [ $(sysctl -n kernel.sched_min_granularity_ns) -ne 10000000  ] && sysctl -q -p /etc/sysctl.d/90-bluc.conf
 fi
 
 #--------------------------------------------------------------------
