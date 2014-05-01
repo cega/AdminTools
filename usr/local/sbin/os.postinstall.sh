@@ -82,17 +82,17 @@ else
 fi
 
 # Is this a virtual guest?
-IS_VIRTUAL=0
-if [ ! -z "$(grep -m1 VMware /proc/scsi/scsi)" ]
-then
-    IS_VIRTUAL=1
-elif [ ! -z "$(grep QEMU /proc/cpuinfo)" -a ! -z "$(grep Bochs /sys/class/dmi/id/bios_vendor)" ]
-then
-    IS_VIRTUAL=2
-elif [ ! -z "$(grep '^flags[[:space:]]*.*hypervisor' /proc/cpuinfo)" ]
-then
-    IS_VIRTUAL=3
-fi
+#IS_VIRTUAL=0
+#if [ ! -z "$(grep -m1 VMware /proc/scsi/scsi)" ]
+#then
+#    IS_VIRTUAL=1
+#elif [ ! -z "$(grep QEMU /proc/cpuinfo)" -a ! -z "$(grep Bochs /sys/class/dmi/id/bios_vendor)" ]
+#then
+#    IS_VIRTUAL=2
+#elif [ ! -z "$(grep '^flags[[:space:]]*.*hypervisor' /proc/cpuinfo)" ]
+#then
+#    IS_VIRTUAL=3
+#fi
 
 # Remove the PPP packages
 if [ "T$LINUX_DIST" = 'TDEBIAN' ]
