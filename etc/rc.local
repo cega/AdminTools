@@ -39,7 +39,17 @@ cat << EOT >> /tmp/sysctl.conf
 vm.swappiness = 10
 EOT
 
-dpkg-query -W xserver-xorg &> /dev/null
+if [ -s /etc/debian_version ]
+then
+    dpkg-query -W xserver-xorg &> /dev/null
+    RC=$?
+elif [ -s /etc/redhat-release ]
+then
+    rpm -q xorg-x11-server-Xorg &> /dev/null
+    RC=$?
+else
+    RC=0
+fi
 [ $? -ne 0 ] && cat << EOT >> /tmp/sysctl.conf
 # Tune the kernel scheduler for a server
 # See: http://people.redhat.com/jeder/presentations/customer_convergence/2012-04-jeder_customer_convergence.pdf
@@ -51,8 +61,10 @@ cat << EOT >> /tmp/sysctl.conf
 
 # Adjust disk write buffers
 EOT
-if [ ! -z "$(lspci | egrep 'RAID.*(MegaRAID|PowerEdge)')" ]
+if [ -x /usr/bin/lspci ]
 then
+    if [ ! -z "$(lspci | egrep 'RAID.*(MegaRAID|PowerEdge)')" ]
+    then
         cat << EOT >> /tmp/sysctl.conf
 # See http://www.fccps.cz/download/adv/frr/hdd/hdd.html
 # 90% disk cache for RAID
@@ -63,6 +75,7 @@ vm.dirty_background_ratio = 45
 vm.dirty_expire_centisecs = 6000
 vm.dirty_writeback_centisecs = 4000
 EOT
+    fi
 else
     SYSTEM_RAM=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
     if [ $SYSTEM_RAM -lt $((2 * 1024 * 1024)) ]
@@ -104,7 +117,7 @@ EOT
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Tune overall security settings
 cat << EOT >> /tmp/sysctl.conf
-# Enable /proc/$pid/maps privacy so that memory relocations are not
+# Enable /proc/\$pid/maps privacy so that memory relocations are not
 # visible to other users.
 kernel.maps_protect = 1
 
@@ -317,11 +330,16 @@ EOT
 if [ -d /etc/sysctl.d ]
 then
     cat /tmp/sysctl.conf > /etc/sysctl.d/90-bluc.conf
-elif [ -z "$(grep B-LUC /etc/sysctl.conf)" ]
+elif [ -z "$(grep 'Dynamically created' /etc/sysctl.conf)" ]
 then
-    cat /tmp/sysctl.conf >> /etc/sysctl.d/90-bluc.conf
+    cat /tmp/sysctl.conf >> /etc/sysctl.conf
 fi
-service procps start
+if [ -s /etc/debian_version ]
+then
+    service procps start
+else
+    sysctl -p /etc/sysctl.conf
+fi
 
 #-------------------------------------------------------------------------
 # Set readahead for disks                                                 
