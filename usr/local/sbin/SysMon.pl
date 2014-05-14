@@ -126,8 +126,8 @@ sub Daemonize()
 sub commify
 {
     my ( $sign, $int, $frac ) = ( $_[0] =~ /^([+-]?)(\d*)(.*)/ );
-    my $commified =
-      ( reverse scalar join ',', unpack '(A3)*', scalar reverse $int );
+    my $commified
+        = ( reverse scalar join ',', unpack '(A3)*', scalar reverse $int );
     return $sign . $commified . $frac;
 } ## end sub commify
 
@@ -174,16 +174,16 @@ sub SendEmail ($)
         } ## end unless ($res)
 
         # The email body
-        my $Msg =
-            "From: root <root\@$MHOST>\n"
-          . "To: $Recipient\n"
-          . "Subject: SysMon alert on $MHOST\n"
-          . "Date: "
-          . localtime . "\n"
-          . "Mime-Version: 1.0\n"
-          . "X-Mailer: $ProgName $MHOST\n\n"
-          . "The system monitoring script on the server '$MHOST' detected this potentially critical issue:\n"
-          . "$MsgText\n";
+        my $Msg
+            = "From: root <root\@$MHOST>\n"
+            . "To: $Recipient\n"
+            . "Subject: SysMon alert on $MHOST\n"
+            . "Date: "
+            . localtime . "\n"
+            . "Mime-Version: 1.0\n"
+            . "X-Mailer: $ProgName $MHOST\n\n"
+            . "The system monitoring script on the server '$MHOST' detected this potentially critical issue:\n"
+            . "$MsgText\n";
 
         $res = $smtp->datasend("$Msg");
         unless ($res)
@@ -212,8 +212,8 @@ sub SendEmail ($)
         # Could not open connection to mail server
         # (tried 3 times!)
         syslog 3,
-          "critical %s %s Could not send email '%s'",
-          POSIX::ctime(time), $MHOST, $MsgText;
+            "critical %s %s Could not send email '%s'",
+            POSIX::ctime(time), $MHOST, $MsgText;
     } ## end if ( $Try >= 3 )
 } ## end sub SendEmail ($)
 
@@ -224,28 +224,28 @@ sub ShowUsage()
 {
 
     print "Usage: $ProgName [options]\n"
-      . "       -a email Specify email address for alerts [default=none]\n"
-      . "       -o path  Specify path for '.csv' files [default=none]\n"
-      . "       -D       Run as daemon [default=no]\n"
-      . "       -i sec   Specify wait interval for vmstat in seconds [default=$opt_i]\n"
-      . "       -I sec   Specify reporting interval in seconds [default=$opt_I]\n"
-      . "       -s log   Log to logfile [default=$opt_s]\n"
-      . "       -h       Show this help [default=no]\n"
-      . "       -d       Show some debug info on STDERR [default=no]\n\n"
-      . "       NOTES:\n"
-      . "        Alerts are disabled unless an email is specified\n"
-      . "        Alerting requires an email listener running on the local host\n"
-      . "        Alerts are sent for any of these conditions:\n"
-      . "          CPU usage is high (error)\n"
-      . "          I/O usage is high (error)\n"
-      . "          Memory usage is high (error)\n"
-      . "          A partition usage exceeds 75% percent (error)\n"
-      . "          A partition usage exceeds 85% percent (critical)\n\n"
-      . "        '.csv' files are only written if the path is given\n"
-      . "        If the path does not exist, no '.csv' is not written\n"
-      . "        There will be individual '.csv' files for data:\n"
-      . "          CPU, I/O, Memory, Disk, Partition\n"
-      . "          MySQL (if running on the local host)\n";
+        . "       -a email Specify email address for alerts [default=none]\n"
+        . "       -o path  Specify path for '.csv' files [default=none]\n"
+        . "       -D       Run as daemon [default=no]\n"
+        . "       -i sec   Specify wait interval for vmstat in seconds [default=$opt_i]\n"
+        . "       -I sec   Specify reporting interval in seconds [default=$opt_I]\n"
+        . "       -s log   Log to logfile [default=$opt_s]\n"
+        . "       -h       Show this help [default=no]\n"
+        . "       -d       Show some debug info on STDERR [default=no]\n\n"
+        . "       NOTES:\n"
+        . "        Alerts are disabled unless an email is specified\n"
+        . "        Alerting requires an email listener running on the local host\n"
+        . "        Alerts are sent for any of these conditions:\n"
+        . "          CPU usage is high (error)\n"
+        . "          I/O usage is high (error)\n"
+        . "          Memory usage is high (error)\n"
+        . "          A partition usage exceeds 75% percent (error)\n"
+        . "          A partition usage exceeds 85% percent (critical)\n\n"
+        . "        '.csv' files are only written if the path is given\n"
+        . "        If the path does not exist, no '.csv' is not written\n"
+        . "        There will be individual '.csv' files for data:\n"
+        . "          CPU, I/O, Memory, Disk, Partition\n"
+        . "          MySQL (if running on the local host)\n";
 
     exit 0;
 } ## end sub ShowUsage
@@ -292,15 +292,15 @@ sub GetMysqldStats()
         my $RSS_percent = $RSS * 100 / $TotalRam;
         my $VSZ_percent = $VSZ * 100 / $TotalRam;
         return
-          sprintf
-          "Mysql resident memory = %s KB (%.f%%), virtual memory = %s KB (%.2f%%)",
-          commify($RSS), $RSS_percent, commify($VSZ), $VSZ_percent;
+            sprintf
+            "Mysql resident memory = %s KB (%.f%%), virtual memory = %s KB (%.2f%%)",
+            commify($RSS), $RSS_percent, commify($VSZ), $VSZ_percent;
     } else
     {
         # Show the absolute numbers
         return
-          sprintf "Mysql resident memory = %s KB, virtual memory = %s KB",
-          commify($RSS), commify($VSZ);
+            sprintf "Mysql resident memory = %s KB, virtual memory = %s KB",
+            commify($RSS), commify($VSZ);
     } ## end else [ if ($TotalRam) ]
 } ## end sub GetMysqldStats
 
@@ -313,10 +313,10 @@ sub ReportInterval()
 
     # Write a syslog entry with the correct severity
     my $Avg = $RunQueue_Interval / ( $VMLNo_Interval - 3 );
-    my $Report =
-      sprintf "Running process average (CPU usage) = %0.2f %s",
-      $Avg,
-      $ReportTail;
+    my $Report
+        = sprintf "Running process average (CPU usage) = %0.2f %s",
+        $Avg,
+        $ReportTail;
     if ($opt_o)
     {
         # Also write data into corresponding '.csv' file
@@ -336,7 +336,7 @@ sub ReportInterval()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": ERROR: $Report\n";
+                ": ERROR: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
         if ($opt_a)
         {
@@ -352,7 +352,7 @@ sub ReportInterval()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": WARNING: $Report\n";
+                ": WARNING: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
     } else
     {
@@ -363,17 +363,15 @@ sub ReportInterval()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": INFO: $Report\n";
+                ": INFO: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
     } ## end else [ if ( $Avg > ( ( $CPUNo...)))]
-    warn "DEBUG: "
-      . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-      . " $Report"
-      if ($opt_d);
+    warn "DEBUG: " . strftime( "%Y-%m-%d %H:%M:%S", localtime ) . " $Report"
+        if ($opt_d);
 
     $Avg = $BlockedP_Interval / ( $VMLNo_Interval - 3 );
     $Report = sprintf "Blocked process average (I/O usage) = %0.2f %s",
-      $Avg, $ReportTail;
+        $Avg, $ReportTail;
     if ($opt_o)
     {
         # Also write data into corresponding '.csv' file
@@ -393,7 +391,7 @@ sub ReportInterval()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": ERROR: $Report\n";
+                ": ERROR: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
         if ($opt_a)
         {
@@ -409,7 +407,7 @@ sub ReportInterval()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": WARNING: $Report\n";
+                ": WARNING: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
     } else
     {
@@ -420,17 +418,15 @@ sub ReportInterval()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": INFO: $Report\n";
+                ": INFO: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
     } ## end else [ if ( $Avg > ( ( $CPUNo...)))]
-    warn "DEBUG: "
-      . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-      . " $Report"
-      if ($opt_d);
+    warn "DEBUG: " . strftime( "%Y-%m-%d %H:%M:%S", localtime ) . " $Report"
+        if ($opt_d);
 
     $Avg = $PageIn_Interval / ( $VMLNo_Interval - 3 );
     $Report = sprintf "Paged-in memory average (Mem usage) = %0.2f %s",
-      $Avg, $ReportTail;
+        $Avg, $ReportTail;
     if ($opt_o)
     {
         # Also write data into corresponding '.csv' file
@@ -450,7 +446,7 @@ sub ReportInterval()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": ERROR: $Report\n";
+                ": ERROR: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
         if ($opt_a)
         {
@@ -466,7 +462,7 @@ sub ReportInterval()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": WARNING: $Report\n";
+                ": WARNING: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
     } else
     {
@@ -477,13 +473,11 @@ sub ReportInterval()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": INFO: $Report\n";
+                ": INFO: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
     } ## end else [ if ( $Avg > 50 ) ]
-    warn "DEBUG: "
-      . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-      . " $Report"
-      if ($opt_d);
+    warn "DEBUG: " . strftime( "%Y-%m-%d %H:%M:%S", localtime ) . " $Report"
+        if ($opt_d);
 
     #-------------------------------------------------
     # Also get partition infos
@@ -494,26 +488,25 @@ sub ReportInterval()
             chomp($PartLine);
             # We are only interested in ext2, ext3 and ext4 partitions
             next
-              unless ( $PartLine =~
-                /^(\S+)\s+ext[2-4]\s+[0-9]+\s+[0-9]+\s+[0-9]+\s+([0-9]+)%\s+(\S+)/o
-              );
+                unless ( $PartLine
+                =~ /^(\S+)\s+ext[2-4]\s+[0-9]+\s+[0-9]+\s+[0-9]+\s+([0-9]+)%\s+(\S+)/o
+                );
             my $FileSystem = "$1";
             my $PercUsed   = $2;
             my $MountPoint = "$3";
             warn
-              "DEBUG: FileSystem '$FileSystem' mounted on '$MountPoint' usage is $PercUsed%\n"
-              if ($opt_d);
+                "DEBUG: FileSystem '$FileSystem' mounted on '$MountPoint' usage is $PercUsed%\n"
+                if ($opt_d);
             if ($opt_o)
             {
                 # Also write data into corresponding '.csv' file
                 my $FileSystem_Sanitized = $FileSystem;
                 $FileSystem_Sanitized =~ s@/@#@g;
-                my ($outfile) =
-                  "$opt_o/$FileSystem_Sanitized.csv" =~ /^([^\0]+)$/;
+                my ($outfile)
+                    = "$opt_o/$FileSystem_Sanitized.csv" =~ /^([^\0]+)$/;
                 if ( open( CSV, '>>', $outfile ) )
                 {
-                    printf CSV '"' . "%s" . '"' . ",%d\n", $Now,
-                      $PercUsed;
+                    printf CSV '"' . "%s" . '"' . ",%d\n", $Now, $PercUsed;
                     close(CSV);
                 } ## end if ( open( CSV, '>>', ...))
             } ## end if ($opt_o)
@@ -526,13 +519,12 @@ sub ReportInterval()
                     if ( $opt_s eq 'syslog' )
                     {
                         syslog 6,
-                          "crit FileSystem '%s' mounted on '%s' usage is %d%%",
-                          $FileSystem, $MountPoint, $PercUsed;
+                            "crit FileSystem '%s' mounted on '%s' usage is %d%%",
+                            $FileSystem, $MountPoint, $PercUsed;
                     } else
                     {
-                        print LF strftime( "%Y-%m-%d %H:%M:%S",
-                            localtime ),
-                          ": CRITICAL: FileSystem '$FileSystem' mounted on '$MountPoint' usage is $PercUsed%\n";
+                        print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
+                            ": CRITICAL: FileSystem '$FileSystem' mounted on '$MountPoint' usage is $PercUsed%\n";
                     } ## end else [ if ( $opt_s eq 'syslog'...)]
                     if ($opt_a)
                     {
@@ -546,13 +538,12 @@ sub ReportInterval()
                     if ( $opt_s eq 'syslog' )
                     {
                         syslog 6,
-                          "err FileSystem '%s' mounted on '%s' usage is %d%%",
-                          $FileSystem, $MountPoint, $PercUsed;
+                            "err FileSystem '%s' mounted on '%s' usage is %d%%",
+                            $FileSystem, $MountPoint, $PercUsed;
                     } else
                     {
-                        print LF strftime( "%Y-%m-%d %H:%M:%S",
-                            localtime ),
-                          ": ERROR: FileSystem '$FileSystem' mounted on '$MountPoint' usage is $PercUsed%\n";
+                        print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
+                            ": ERROR: FileSystem '$FileSystem' mounted on '$MountPoint' usage is $PercUsed%\n";
                     } ## end else [ if ( $opt_s eq 'syslog'...)]
                 } ## end else [ if ( $PercUsed > 85 ) ]
                 if ($opt_a)
@@ -567,12 +558,12 @@ sub ReportInterval()
                 if ( $opt_s eq 'syslog' )
                 {
                     syslog 6,
-                      "info FileSystem '%s' mounted on '%s' usage is %d%%",
-                      $FileSystem, $MountPoint, $PercUsed;
+                        "info FileSystem '%s' mounted on '%s' usage is %d%%",
+                        $FileSystem, $MountPoint, $PercUsed;
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: FileSystem '$FileSystem' mounted on '$MountPoint' usage is $PercUsed%\n";
+                        ": INFO: FileSystem '$FileSystem' mounted on '$MountPoint' usage is $PercUsed%\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
             } ## end else [ if ( $PercUsed > 75 ) ]
         } ## end while ( my $PartLine = <PARTINFO>...)
@@ -592,20 +583,18 @@ sub ReportInterval()
             chomp($IFData);
 
             warn "DEBUG: "
-              . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-              . " $IFData"
-              if ($opt_d);
-            my (
-                $RXbytes, $RXpkts,  $RXerr,  $RXdrop,
-                $RXfifo,  $RXframe, $RXcomp, $RXmulti,
-                $TXbytes, $TXpkts,  $TXerr,  $TXdrop,
-                $TXfifo,  $TXframe, $TXcomp, $TXmulti
+                . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+                . " $IFData"
+                if ($opt_d);
+            my ($RXbytes, $RXpkts,  $RXerr,   $RXdrop, $RXfifo, $RXframe,
+                $RXcomp,  $RXmulti, $TXbytes, $TXpkts, $TXerr,  $TXdrop,
+                $TXfifo,  $TXframe, $TXcomp,  $TXmulti
             ) = split( /\s+/, $IFData );
             warn "DEBUG: "
-              . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-              . " $RXbytes, $RXpkts,  $RXerr,  $RXdrop, $RXfifo,  $RXframe, $RXcomp, $RXmulti,"
-              . " $TXbytes, $TXpkts,  $TXerr,  $TXdrop, $TXfifo,  $TXframe, $TXcomp, $TXmulti"
-              if ($opt_d);
+                . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+                . " $RXbytes, $RXpkts,  $RXerr,  $RXdrop, $RXfifo,  $RXframe, $RXcomp, $RXmulti,"
+                . " $TXbytes, $TXpkts,  $TXerr,  $TXdrop, $TXfifo,  $TXframe, $TXcomp, $TXmulti"
+                if ($opt_d);
 
             if ($opt_o)
             {
@@ -614,21 +603,21 @@ sub ReportInterval()
                 if ( open( CSV, '>>', $outfile ) )
                 {
                     printf CSV '"' . "%s" . '"'
-                      . ",%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
-                      $Now, $RXbytes, $RXpkts, $RXerr, $RXdrop,
-                      $RXfifo, $RXframe, $RXcomp, $RXmulti, $TXbytes,
-                      $TXpkts, $TXerr, $TXdrop, $TXfifo, $TXframe, $TXcomp,
-                      $TXmulti;
+                        . ",%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d\n",
+                        $Now,    $RXbytes, $RXpkts, $RXerr,   $RXdrop,
+                        $RXfifo, $RXframe, $RXcomp, $RXmulti, $TXbytes,
+                        $TXpkts, $TXerr, $TXdrop, $TXfifo, $TXframe, $TXcomp,
+                        $TXmulti;
                     close(CSV);
                 } ## end if ( open( CSV, '>>', ...))
             } ## end if ($opt_o)
 
-            my $RX_percent =
-                ( $RXpkts > 0 )
-              ? ( $RXerr + $RXdrop + $RXfifo + $RXcomp ) * 100 / $RXpkts
-              : 0;
+            my $RX_percent
+                = ( $RXpkts > 0 )
+                ? ( $RXerr + $RXdrop + $RXfifo + $RXcomp ) * 100 / $RXpkts
+                : 0;
             $Report = sprintf "Receive errors for %s = %0.2f%% ",
-              $IFName, $RX_percent;
+                $IFName, $RX_percent;
             if ( $RX_percent < 0.3 )
             {
                 $Report .= '(low)';
@@ -638,7 +627,7 @@ sub ReportInterval()
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
             } elsif ( $RX_percent < 1 )
             {
@@ -649,7 +638,7 @@ sub ReportInterval()
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
             } else
             {
@@ -660,13 +649,13 @@ sub ReportInterval()
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
             } ## end else [ if ( $RX_percent < 0.3...)]
             warn "DEBUG: "
-              . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-              . " $Report"
-              if ($opt_d);
+                . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+                . " $Report"
+                if ($opt_d);
 
             # Calculate the receive speed
             if ( $RXPrevBytes_Interval{"$IFName"} )
@@ -675,44 +664,40 @@ sub ReportInterval()
                 if ( $RXPrevBytes_Interval{"$IFName"} > $RXbytes )
                 {
 
-                 # Deal with the 4GB counter limitation of the Linux kernel
+                    # Deal with the 4GB counter limitation of the Linux kernel
                     $Speed = (
-                        (
-                            (
-                                4294967296 -
-                                  $RXPrevBytes_Interval{"$IFName"}
-                            ) + $RXbytes
+                        (   ( 4294967296 - $RXPrevBytes_Interval{"$IFName"} )
+                            + $RXbytes
                         ) / $opt_I
                     ) * 8;
                 } else
                 {
-                    $Speed =
-                      ( ( $RXbytes - $RXPrevBytes_Interval{"$IFName"} ) /
-                          $opt_I ) * 8;
+                    $Speed = ( ( $RXbytes - $RXPrevBytes_Interval{"$IFName"} )
+                        / $opt_I ) * 8;
                 } ## end else [ if ( $RXPrevBytes_Interval...)]
                 $Report = sprintf "Receive speed for %s = %s bits/s ",
-                  $IFName, commify( sprintf "%.2f", $Speed );
+                    $IFName, commify( sprintf "%.2f", $Speed );
                 if ( $opt_s eq 'syslog' )
                 {
                     syslog 6, "info %s", $Report;
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
                 warn "DEBUG: "
-                  . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-                  . " $Report"
-                  if ($opt_d);
+                    . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+                    . " $Report"
+                    if ($opt_d);
             } ## end if ( $RXPrevBytes_Interval...)
             $RXPrevBytes_Interval{"$IFName"} = $RXbytes;
 
-            my $TX_percent =
-                ( $TXpkts > 0 )
-              ? ( $TXerr + $TXdrop + $TXfifo + $TXcomp ) * 100 / $TXpkts
-              : 0;
+            my $TX_percent
+                = ( $TXpkts > 0 )
+                ? ( $TXerr + $TXdrop + $TXfifo + $TXcomp ) * 100 / $TXpkts
+                : 0;
             $Report = sprintf "Transmit errors for %s = %0.2f%% ",
-              $IFName, $TX_percent;
+                $IFName, $TX_percent;
             if ( $TX_percent < 0.3 )
             {
                 $Report .= '(low)';
@@ -722,7 +707,7 @@ sub ReportInterval()
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
             } elsif ( $TX_percent < 1 )
             {
@@ -733,7 +718,7 @@ sub ReportInterval()
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
             } else
             {
@@ -744,13 +729,13 @@ sub ReportInterval()
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
             } ## end else [ if ( $TX_percent < 0.3...)]
             warn "DEBUG: "
-              . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-              . " $Report"
-              if ($opt_d);
+                . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+                . " $Report"
+                if ($opt_d);
 
             # Calculate the transmit speed
             if ( $TXPrevBytes_Interval{"$IFName"} )
@@ -759,35 +744,31 @@ sub ReportInterval()
                 if ( $TXPrevBytes_Interval{"$IFName"} > $TXbytes )
                 {
 
-                 # Deal with the 4GB counter limitation of the Linux kernel
+                    # Deal with the 4GB counter limitation of the Linux kernel
                     $Speed = (
-                        (
-                            (
-                                4294967296 -
-                                  $TXPrevBytes_Interval{"$IFName"}
-                            ) + $TXbytes
+                        (   ( 4294967296 - $TXPrevBytes_Interval{"$IFName"} )
+                            + $TXbytes
                         ) / $opt_I
                     ) * 8;
                 } else
                 {
-                    $Speed =
-                      ( ( $TXbytes - $TXPrevBytes_Interval{"$IFName"} ) /
-                          $opt_I ) * 8;
+                    $Speed = ( ( $TXbytes - $TXPrevBytes_Interval{"$IFName"} )
+                        / $opt_I ) * 8;
                 } ## end else [ if ( $TXPrevBytes_Interval...)]
                 $Report = sprintf "Transmit speed for %s = %s bits/s ",
-                  $IFName, commify( sprintf "%.2f", $Speed );
+                    $IFName, commify( sprintf "%.2f", $Speed );
                 if ( $opt_s eq 'syslog' )
                 {
                     syslog 6, "info %s", $Report;
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
                 warn "DEBUG: "
-                  . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-                  . " $Report"
-                  if ($opt_d);
+                    . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+                    . " $Report"
+                    if ($opt_d);
             } ## end if ( $TXPrevBytes_Interval...)
             $TXPrevBytes_Interval{"$IFName"} = $TXbytes;
         } ## end while ( my $DEVLine = <DEVSTAT>...)
@@ -806,17 +787,18 @@ sub ReportInterval()
             my $DiskPart   = '';
             my $DiskReads  = 0;
             my $DiskWrites = 0;
-            if ( $DEVLine =~
-                /^\s*\d+\s+\d+\s+([a-z]d[a-z]\d+)\s+\d+\s+\d+\s+(\d+)\s+\d+\s+\d+\s+(\d+)/o
-              )
+            if ( $DEVLine
+                =~ /^\s*\d+\s+\d+\s+([a-z]d[a-z]\d+)\s+\d+\s+\d+\s+(\d+)\s+\d+\s+\d+\s+\d+\s+(\d+)/o
+                )
             {
                 # [a-z]d[a-z][0-9], eg. sda1
                 $DiskPart   = "$1";
                 $DiskReads  = $2 * 512;
                 $DiskWrites = $3 * 512;
-            } elsif ( $DEVLine =~
-                /^\s*\d+\s+\d+\s+(dm\-\d+)\s+\d+\s+\d+\s+(\d+)\s+\d+\s+\d+\s+(\d+)/o
-              )
+
+            } elsif ( $DEVLine
+                =~ /^\s*\d+\s+\d+\s+(dm\-\d+)\s+\d+\s+\d+\s+(\d+)\s+\d+\s+\d+\s+\d+\s+(\d+)/o
+                )
             {
                 # dm-[0-9], eg. dm-0
                 $DiskPart   = "$1";
@@ -828,9 +810,9 @@ sub ReportInterval()
             next unless ( length($DiskPart) );
 
             warn "DEBUG: "
-              . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-              . " $DiskPart $DiskReads $DiskWrites"
-              if ($opt_d);
+                . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+                . " $DiskPart $DiskReads $DiskWrites"
+                if ($opt_d);
             if ($opt_o)
             {
                 # Also write data into corresponding '.csv' file
@@ -838,7 +820,7 @@ sub ReportInterval()
                 if ( open( CSV, '>>', $outfile ) )
                 {
                     printf CSV '"' . "%s" . '"' . ",%d,%d\n", $Now,
-                      $DiskReads, $DiskWrites;
+                        $DiskReads, $DiskWrites;
                     close(CSV);
                 } ## end if ( open( CSV, '>>', ...))
             } ## end if ($opt_o)
@@ -850,30 +832,29 @@ sub ReportInterval()
                 if ( $ReadBytes_Interval{"$DiskPart"} > $DiskReads )
                 {
 
-                 # Deal with the 4GB counter limitation of the Linux kernel
-                    $Speed =
-                      ( ( 4294967296 - $ReadBytes_Interval{"$DiskPart"} ) +
-                          $DiskReads ) / $opt_I;
+                    # Deal with the 4GB counter limitation of the Linux kernel
+                    $Speed
+                        = ( ( 4294967296 - $ReadBytes_Interval{"$DiskPart"} )
+                        + $DiskReads ) / $opt_I;
                 } else
                 {
-                    $Speed =
-                      ( $DiskReads - $ReadBytes_Interval{"$DiskPart"} ) /
-                      $opt_I;
+                    $Speed = ( $DiskReads - $ReadBytes_Interval{"$DiskPart"} )
+                        / $opt_I;
                 } ## end else [ if ( $ReadBytes_Interval...)]
                 $Report = sprintf "Disk read speed for %s = %s bytes/s ",
-                  $DiskPart, commify( sprintf "%.2f", $Speed );
+                    $DiskPart, commify( sprintf "%.2f", $Speed );
                 if ( $opt_s eq 'syslog' )
                 {
                     syslog 6, "info %s", $Report;
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
                 warn "DEBUG: "
-                  . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-                  . " $Report"
-                  if ($opt_d);
+                    . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+                    . " $Report"
+                    if ($opt_d);
             } ## end if ( $ReadBytes_Interval...)
             $ReadBytes_Interval{"$DiskPart"} = $DiskReads;
 
@@ -884,30 +865,30 @@ sub ReportInterval()
                 if ( $WriteBytes_Interval{"$DiskPart"} > $DiskWrites )
                 {
 
-                 # Deal with the 4GB counter limitation of the Linux kernel
-                    $Speed =
-                      ( ( 4294967296 - $WriteBytes_Interval{"$DiskPart"} )
+                    # Deal with the 4GB counter limitation of the Linux kernel
+                    $Speed
+                        = ( ( 4294967296 - $WriteBytes_Interval{"$DiskPart"} )
                         + $DiskWrites ) / $opt_I;
                 } else
                 {
-                    $Speed =
-                      ( $DiskWrites - $WriteBytes_Interval{"$DiskPart"} ) /
-                      $opt_I;
+                    $Speed
+                        = ( $DiskWrites - $WriteBytes_Interval{"$DiskPart"} )
+                        / $opt_I;
                 } ## end else [ if ( $WriteBytes_Interval...)]
                 $Report = sprintf "Disk write speed for %s = %s bytes/s ",
-                  $DiskPart, commify( sprintf "%.2f", $Speed );
+                    $DiskPart, commify( sprintf "%.2f", $Speed );
                 if ( $opt_s eq 'syslog' )
                 {
                     syslog 6, "info %s", $Report;
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
                 warn "DEBUG: "
-                  . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-                  . " $Report"
-                  if ($opt_d);
+                    . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+                    . " $Report"
+                    if ($opt_d);
             } ## end if ( $WriteBytes_Interval...)
             $WriteBytes_Interval{"$DiskPart"} = $DiskWrites;
         } ## end while ( my $DEVLine = <DEVSTAT>...)
@@ -923,12 +904,12 @@ sub ReportInterval()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": INFO: $Report\n";
+                ": INFO: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
         warn "DEBUG: "
-          . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-          . " $Report"
-          if ($opt_d);
+            . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+            . " $Report"
+            if ($opt_d);
         if ($opt_o)
         {
             # Also write data into corresponding '.csv' file
@@ -956,10 +937,10 @@ sub ReportHourly()
 {
     # Write a syslog entry with the correct severity
     my $Avg = $RunQueue_Hourly / ( $VMLNo_Hourly - 3 );
-    my $Report =
-      sprintf "HOURLY: Running process average (CPU usage) = %0.2f %s",
-      $Avg,
-      $ReportTail;
+    my $Report
+        = sprintf "HOURLY: Running process average (CPU usage) = %0.2f %s",
+        $Avg,
+        $ReportTail;
     if ( $Avg > ( ( $CPUNo + 1 ) * 2 ) )
     {
         $Report =~ s/HHMMLL/high/;
@@ -969,7 +950,7 @@ sub ReportHourly()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": ERROR: $Report\n";
+                ": ERROR: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
     } elsif ( $Avg > $CPUNo )
     {
@@ -980,7 +961,7 @@ sub ReportHourly()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": WARNING: $Report\n";
+                ": WARNING: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
     } else
     {
@@ -991,18 +972,16 @@ sub ReportHourly()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": INFO: $Report\n";
+                ": INFO: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
     } ## end else [ if ( $Avg > ( ( $CPUNo...)))]
-    warn "DEBUG: "
-      . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-      . " $Report"
-      if ($opt_d);
+    warn "DEBUG: " . strftime( "%Y-%m-%d %H:%M:%S", localtime ) . " $Report"
+        if ($opt_d);
 
     $Avg = $BlockedP_Hourly / ( $VMLNo_Hourly - 3 );
-    $Report =
-      sprintf "HOURLY: Blocked process average (I/O usage) = %0.2f %s",
-      $Avg, $ReportTail;
+    $Report
+        = sprintf "HOURLY: Blocked process average (I/O usage) = %0.2f %s",
+        $Avg, $ReportTail;
     if ( $Avg > ( ( $CPUNo + 1 ) * 2 ) )
     {
         $Report =~ s/HHMMLL/high/;
@@ -1012,7 +991,7 @@ sub ReportHourly()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": ERROR: $Report\n";
+                ": ERROR: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
     } elsif ( $Avg > $CPUNo )
     {
@@ -1023,7 +1002,7 @@ sub ReportHourly()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": WARNING: $Report\n";
+                ": WARNING: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
     } else
     {
@@ -1034,18 +1013,16 @@ sub ReportHourly()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": INFO: $Report\n";
+                ": INFO: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
     } ## end else [ if ( $Avg > ( ( $CPUNo...)))]
-    warn "DEBUG: "
-      . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-      . " $Report"
-      if ($opt_d);
+    warn "DEBUG: " . strftime( "%Y-%m-%d %H:%M:%S", localtime ) . " $Report"
+        if ($opt_d);
 
     $Avg = $PageIn_Hourly / ( $VMLNo_Hourly - 3 );
-    $Report =
-      sprintf "HOURLY: Paged-in memory average (Mem usage) = %0.2f %s",
-      $Avg, $ReportTail;
+    $Report
+        = sprintf "HOURLY: Paged-in memory average (Mem usage) = %0.2f %s",
+        $Avg, $ReportTail;
     if ( $Avg > 50 )
     {
         $Report =~ s/HHMMLL/high/;
@@ -1055,7 +1032,7 @@ sub ReportHourly()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": ERROR: $Report\n";
+                ": ERROR: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
     } elsif ( $Avg > 20 )
     {
@@ -1066,7 +1043,7 @@ sub ReportHourly()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": WARNING: $Report\n";
+                ": WARNING: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
     } else
     {
@@ -1077,13 +1054,11 @@ sub ReportHourly()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": INFO: $Report\n";
+                ": INFO: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
     } ## end else [ if ( $Avg > 50 ) ]
-    warn "DEBUG: "
-      . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-      . " $Report"
-      if ($opt_d);
+    warn "DEBUG: " . strftime( "%Y-%m-%d %H:%M:%S", localtime ) . " $Report"
+        if ($opt_d);
 
     #-------------------------------------------------
     # Also compute network interface errors and speeds
@@ -1098,27 +1073,25 @@ sub ReportHourly()
             chomp($IFData);
 
             warn "DEBUG: "
-              . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-              . " $IFData"
-              if ($opt_d);
-            my (
-                $RXbytes, $RXpkts,  $RXerr,  $RXdrop,
-                $RXfifo,  $RXframe, $RXcomp, $RXmulti,
-                $TXbytes, $TXpkts,  $TXerr,  $TXdrop,
-                $TXfifo,  $TXframe, $TXcomp, $TXmulti
+                . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+                . " $IFData"
+                if ($opt_d);
+            my ($RXbytes, $RXpkts,  $RXerr,   $RXdrop, $RXfifo, $RXframe,
+                $RXcomp,  $RXmulti, $TXbytes, $TXpkts, $TXerr,  $TXdrop,
+                $TXfifo,  $TXframe, $TXcomp,  $TXmulti
             ) = split( /\s+/, $IFData );
             warn "DEBUG: "
-              . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-              . " $RXbytes, $RXpkts,  $RXerr,  $RXdrop, $RXfifo,  $RXframe, $RXcomp, $RXmulti,"
-              . " $TXbytes, $TXpkts,  $TXerr,  $TXdrop, $TXfifo,  $TXframe, $TXcomp, $TXmulti"
-              if ($opt_d);
+                . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+                . " $RXbytes, $RXpkts,  $RXerr,  $RXdrop, $RXfifo,  $RXframe, $RXcomp, $RXmulti,"
+                . " $TXbytes, $TXpkts,  $TXerr,  $TXdrop, $TXfifo,  $TXframe, $TXcomp, $TXmulti"
+                if ($opt_d);
 
-            my $RX_percent =
-                ( $RXpkts > 0 )
-              ? ( $RXerr + $RXdrop + $RXfifo + $RXcomp ) * 100 / $RXpkts
-              : 0;
+            my $RX_percent
+                = ( $RXpkts > 0 )
+                ? ( $RXerr + $RXdrop + $RXfifo + $RXcomp ) * 100 / $RXpkts
+                : 0;
             $Report = sprintf "HOURLY: Receive errors for %s = %0.2f%% ",
-              $IFName, $RX_percent;
+                $IFName, $RX_percent;
             if ( $RX_percent < 0.3 )
             {
                 $Report .= '(low)';
@@ -1128,7 +1101,7 @@ sub ReportHourly()
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
             } elsif ( $RX_percent < 1 )
             {
@@ -1139,7 +1112,7 @@ sub ReportHourly()
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
             } else
             {
@@ -1150,13 +1123,13 @@ sub ReportHourly()
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
             } ## end else [ if ( $RX_percent < 0.3...)]
             warn "DEBUG: "
-              . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-              . " $Report"
-              if ($opt_d);
+                . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+                . " $Report"
+                if ($opt_d);
 
             # Calculate the receive speed
             if ( $RXPrevBytes_Hourly{"$IFName"} )
@@ -1165,44 +1138,40 @@ sub ReportHourly()
                 if ( $RXPrevBytes_Hourly{"$IFName"} > $RXbytes )
                 {
 
-                 # Deal with the 4GB counter limitation of the Linux kernel
+                    # Deal with the 4GB counter limitation of the Linux kernel
                     $Speed = (
-                        (
-                            (
-                                4294967296 - $RXPrevBytes_Hourly{"$IFName"}
-                            ) + $RXbytes
+                        (   ( 4294967296 - $RXPrevBytes_Hourly{"$IFName"} )
+                            + $RXbytes
                         ) / $opt_I
                     ) * 8;
                 } else
                 {
-                    $Speed =
-                      ( ( $RXbytes - $RXPrevBytes_Hourly{"$IFName"} ) /
-                          $opt_I ) * 8;
+                    $Speed = ( ( $RXbytes - $RXPrevBytes_Hourly{"$IFName"} )
+                        / $opt_I ) * 8;
                 } ## end else [ if ( $RXPrevBytes_Hourly...)]
-                $Report =
-                  sprintf "HOURLY: Receive speed for %s = %s bits/s ",
-                  $IFName, commify( sprintf "%.2f", $Speed );
+                $Report = sprintf "HOURLY: Receive speed for %s = %s bits/s ",
+                    $IFName, commify( sprintf "%.2f", $Speed );
                 if ( $opt_s eq 'syslog' )
                 {
                     syslog 6, "info %s", $Report;
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
                 warn "DEBUG: "
-                  . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-                  . " $Report"
-                  if ($opt_d);
+                    . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+                    . " $Report"
+                    if ($opt_d);
             } ## end if ( $RXPrevBytes_Hourly...)
             $RXPrevBytes_Hourly{"$IFName"} = $RXbytes;
 
-            my $TX_percent =
-                ( $TXpkts > 0 )
-              ? ( $TXerr + $TXdrop + $TXfifo + $TXcomp ) * 100 / $TXpkts
-              : 0;
+            my $TX_percent
+                = ( $TXpkts > 0 )
+                ? ( $TXerr + $TXdrop + $TXfifo + $TXcomp ) * 100 / $TXpkts
+                : 0;
             $Report = sprintf "HOURLY: Transmit errors for %s = %0.2f%% ",
-              $IFName, $TX_percent;
+                $IFName, $TX_percent;
             if ( $TX_percent < 0.3 )
             {
                 $Report .= '(low)';
@@ -1212,7 +1181,7 @@ sub ReportHourly()
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
             } elsif ( $TX_percent < 1 )
             {
@@ -1223,7 +1192,7 @@ sub ReportHourly()
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
             } else
             {
@@ -1234,13 +1203,13 @@ sub ReportHourly()
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
             } ## end else [ if ( $TX_percent < 0.3...)]
             warn "DEBUG: "
-              . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-              . " $Report"
-              if ($opt_d);
+                . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+                . " $Report"
+                if ($opt_d);
 
             # Calculate the transmit speed
             if ( $TXPrevBytes_Hourly{"$IFName"} )
@@ -1249,35 +1218,32 @@ sub ReportHourly()
                 if ( $TXPrevBytes_Hourly{"$IFName"} > $TXbytes )
                 {
 
-                 # Deal with the 4GB counter limitation of the Linux kernel
+                    # Deal with the 4GB counter limitation of the Linux kernel
                     $Speed = (
-                        (
-                            (
-                                4294967296 - $TXPrevBytes_Hourly{"$IFName"}
-                            ) + $TXbytes
+                        (   ( 4294967296 - $TXPrevBytes_Hourly{"$IFName"} )
+                            + $TXbytes
                         ) / $opt_I
                     ) * 8;
                 } else
                 {
-                    $Speed =
-                      ( ( $TXbytes - $TXPrevBytes_Hourly{"$IFName"} ) /
-                          $opt_I ) * 8;
+                    $Speed = ( ( $TXbytes - $TXPrevBytes_Hourly{"$IFName"} )
+                        / $opt_I ) * 8;
                 } ## end else [ if ( $TXPrevBytes_Hourly...)]
-                $Report =
-                  sprintf "HOURLY: Transmit speed for %s = %s bits/s ",
-                  $IFName, commify( sprintf "%.2f", $Speed );
+                $Report
+                    = sprintf "HOURLY: Transmit speed for %s = %s bits/s ",
+                    $IFName, commify( sprintf "%.2f", $Speed );
                 if ( $opt_s eq 'syslog' )
                 {
                     syslog 6, "info %s", $Report;
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
                 warn "DEBUG: "
-                  . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-                  . " $Report"
-                  if ($opt_d);
+                    . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+                    . " $Report"
+                    if ($opt_d);
             } ## end if ( $TXPrevBytes_Hourly...)
             $TXPrevBytes_Hourly{"$IFName"} = $TXbytes;
         } ## end while ( my $DEVLine = <DEVSTAT>...)
@@ -1296,17 +1262,18 @@ sub ReportHourly()
             my $DiskPart   = '';
             my $DiskReads  = 0;
             my $DiskWrites = 0;
-            if ( $DEVLine =~
-                /^\s*\d+\s+\d+\s+([a-z]d[a-z]\d+)\s+\d+\s+\d+\s+(\d+)\s+\d+\s+\d+\s+(\d+)/o
-              )
+            if ( $DEVLine
+                =~ /^\s*\d+\s+\d+\s+([a-z]d[a-z]\d+)\s+\d+\s+\d+\s+(\d+)\s+\d+\s+\d+\s+\d+\s+(\d+)/o
+                )
             {
                 # [a-z]d[a-z][0-9], eg. sda1
                 $DiskPart   = "$1";
                 $DiskReads  = $2 * 512;
                 $DiskWrites = $3 * 512;
-            } elsif ( $DEVLine =~
-                /^\s*\d+\s+\d+\s+(dm\-\d+)\s+\d+\s+\d+\s+(\d+)\s+\d+\s+\d+\s+(\d+)/o
-              )
+
+            } elsif ( $DEVLine
+                =~ /^\s*\d+\s+\d+\s+(dm\-\d+)\s+\d+\s+\d+\s+(\d+)\s+\d+\s+\d+\s+\d+\s+(\d+)/o
+                )
             {
                 # dm-[0-9], eg. dm-0
                 $DiskPart   = "$1";
@@ -1318,9 +1285,9 @@ sub ReportHourly()
             next unless ( length($DiskPart) );
 
             warn "DEBUG: "
-              . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-              . " $DiskPart $DiskReads $DiskWrites"
-              if ($opt_d);
+                . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+                . " $DiskPart $DiskReads $DiskWrites"
+                if ($opt_d);
 
             # Calculate the read speed for the partition
             if ( $ReadBytes_Hourly{"$DiskPart"} )
@@ -1329,31 +1296,29 @@ sub ReportHourly()
                 if ( $ReadBytes_Hourly{"$DiskPart"} > $DiskReads )
                 {
 
-                 # Deal with the 4GB counter limitation of the Linux kernel
-                    $Speed =
-                      ( ( 4294967296 - $ReadBytes_Hourly{"$DiskPart"} ) +
-                          $DiskReads ) / $opt_I;
+                    # Deal with the 4GB counter limitation of the Linux kernel
+                    $Speed = ( ( 4294967296 - $ReadBytes_Hourly{"$DiskPart"} )
+                        + $DiskReads ) / $opt_I;
                 } else
                 {
-                    $Speed =
-                      ( $DiskReads - $ReadBytes_Hourly{"$DiskPart"} ) /
-                      $opt_I;
+                    $Speed = ( $DiskReads - $ReadBytes_Hourly{"$DiskPart"} )
+                        / $opt_I;
                 } ## end else [ if ( $ReadBytes_Hourly...)]
-                $Report =
-                  sprintf "HOURLY: Disk read speed for %s = %s bytes/s ",
-                  $DiskPart, commify( sprintf "%.2f", $Speed );
+                $Report
+                    = sprintf "HOURLY: Disk read speed for %s = %s bytes/s ",
+                    $DiskPart, commify( sprintf "%.2f", $Speed );
                 if ( $opt_s eq 'syslog' )
                 {
                     syslog 6, "info %s", $Report;
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
                 warn "DEBUG: "
-                  . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-                  . " $Report"
-                  if ($opt_d);
+                    . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+                    . " $Report"
+                    if ($opt_d);
             } ## end if ( $ReadBytes_Hourly...)
             $ReadBytes_Hourly{"$DiskPart"} = $DiskReads;
 
@@ -1364,31 +1329,30 @@ sub ReportHourly()
                 if ( $WriteBytes_Hourly{"$DiskPart"} > $DiskWrites )
                 {
 
-                 # Deal with the 4GB counter limitation of the Linux kernel
-                    $Speed =
-                      ( ( 4294967296 - $WriteBytes_Hourly{"$DiskPart"} ) +
-                          $DiskWrites ) / $opt_I;
+                    # Deal with the 4GB counter limitation of the Linux kernel
+                    $Speed
+                        = ( ( 4294967296 - $WriteBytes_Hourly{"$DiskPart"} )
+                        + $DiskWrites ) / $opt_I;
                 } else
                 {
-                    $Speed =
-                      ( $DiskWrites - $WriteBytes_Hourly{"$DiskPart"} ) /
-                      $opt_I;
+                    $Speed = ( $DiskWrites - $WriteBytes_Hourly{"$DiskPart"} )
+                        / $opt_I;
                 } ## end else [ if ( $WriteBytes_Hourly...)]
-                $Report =
-                  sprintf "HOURLY: Disk write speed for %s = %s bytes/s ",
-                  $DiskPart, commify( sprintf "%.2f", $Speed );
+                $Report
+                    = sprintf "HOURLY: Disk write speed for %s = %s bytes/s ",
+                    $DiskPart, commify( sprintf "%.2f", $Speed );
                 if ( $opt_s eq 'syslog' )
                 {
                     syslog 6, "info %s", $Report;
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
                 warn "DEBUG: "
-                  . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-                  . " $Report"
-                  if ($opt_d);
+                    . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+                    . " $Report"
+                    if ($opt_d);
             } ## end if ( $WriteBytes_Hourly...)
             $WriteBytes_Hourly{"$DiskPart"} = $DiskWrites;
         } ## end while ( my $DEVLine = <DEVSTAT>...)
@@ -1404,12 +1368,12 @@ sub ReportHourly()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": INFO: $Report\n";
+                ": INFO: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
         warn "DEBUG: "
-          . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-          . " $Report"
-          if ($opt_d);
+            . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+            . " $Report"
+            if ($opt_d);
     } ## end unless ( system('pgrep mysqld > /dev/null 2>&1'...))
         # Start the next reporting cycle
     $VMLNo_Hourly    = 3;
@@ -1426,10 +1390,10 @@ sub ReportDaily()
 {
     # Write a syslog entry with the correct severity
     my $Avg = $RunQueue_Daily / ( $VMLNo_Daily - 3 );
-    my $Report =
-      sprintf "DAILY: Running process average (CPU usage) = %0.2f %s",
-      $Avg,
-      $ReportTail;
+    my $Report
+        = sprintf "DAILY: Running process average (CPU usage) = %0.2f %s",
+        $Avg,
+        $ReportTail;
     if ( $Avg > ( ( $CPUNo + 1 ) * 2 ) )
     {
         $Report =~ s/HHMMLL/high/;
@@ -1439,7 +1403,7 @@ sub ReportDaily()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": ERROR: $Report\n";
+                ": ERROR: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
     } elsif ( $Avg > $CPUNo )
     {
@@ -1450,7 +1414,7 @@ sub ReportDaily()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": WARNING: $Report\n";
+                ": WARNING: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
     } else
     {
@@ -1461,18 +1425,15 @@ sub ReportDaily()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": INFO: $Report\n";
+                ": INFO: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
     } ## end else [ if ( $Avg > ( ( $CPUNo...)))]
-    warn "DEBUG: "
-      . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-      . " $Report"
-      if ($opt_d);
+    warn "DEBUG: " . strftime( "%Y-%m-%d %H:%M:%S", localtime ) . " $Report"
+        if ($opt_d);
 
     $Avg = $BlockedP_Daily / ( $VMLNo_Daily - 3 );
-    $Report =
-      sprintf "DAILY: Blocked process average (I/O usage) = %0.2f %s",
-      $Avg, $ReportTail;
+    $Report = sprintf "DAILY: Blocked process average (I/O usage) = %0.2f %s",
+        $Avg, $ReportTail;
     if ( $Avg > ( ( $CPUNo + 1 ) * 2 ) )
     {
         $Report =~ s/HHMMLL/high/;
@@ -1482,7 +1443,7 @@ sub ReportDaily()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": ERROR: $Report\n";
+                ": ERROR: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
     } elsif ( $Avg > $CPUNo )
     {
@@ -1493,7 +1454,7 @@ sub ReportDaily()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": WARNING: $Report\n";
+                ": WARNING: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
     } else
     {
@@ -1504,18 +1465,15 @@ sub ReportDaily()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": INFO: $Report\n";
+                ": INFO: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
     } ## end else [ if ( $Avg > ( ( $CPUNo...)))]
-    warn "DEBUG: "
-      . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-      . " $Report"
-      if ($opt_d);
+    warn "DEBUG: " . strftime( "%Y-%m-%d %H:%M:%S", localtime ) . " $Report"
+        if ($opt_d);
 
     $Avg = $PageIn_Daily / ( $VMLNo_Daily - 3 );
-    $Report =
-      sprintf "DAILY: Paged-in memory average (Mem usage) = %0.2f %s",
-      $Avg, $ReportTail;
+    $Report = sprintf "DAILY: Paged-in memory average (Mem usage) = %0.2f %s",
+        $Avg, $ReportTail;
     if ( $Avg > 50 )
     {
         $Report =~ s/HHMMLL/high/;
@@ -1525,7 +1483,7 @@ sub ReportDaily()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": ERROR: $Report\n";
+                ": ERROR: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
     } elsif ( $Avg > 20 )
     {
@@ -1536,7 +1494,7 @@ sub ReportDaily()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": WARNING: $Report\n";
+                ": WARNING: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
     } else
     {
@@ -1547,13 +1505,11 @@ sub ReportDaily()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": INFO: $Report\n";
+                ": INFO: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
     } ## end else [ if ( $Avg > 50 ) ]
-    warn "DEBUG: "
-      . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-      . " $Report"
-      if ($opt_d);
+    warn "DEBUG: " . strftime( "%Y-%m-%d %H:%M:%S", localtime ) . " $Report"
+        if ($opt_d);
 
     #-------------------------------------------------
     # Also compute network interface errors and speeds
@@ -1568,27 +1524,25 @@ sub ReportDaily()
             chomp($IFData);
 
             warn "DEBUG: "
-              . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-              . " $IFData"
-              if ($opt_d);
-            my (
-                $RXbytes, $RXpkts,  $RXerr,  $RXdrop,
-                $RXfifo,  $RXframe, $RXcomp, $RXmulti,
-                $TXbytes, $TXpkts,  $TXerr,  $TXdrop,
-                $TXfifo,  $TXframe, $TXcomp, $TXmulti
+                . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+                . " $IFData"
+                if ($opt_d);
+            my ($RXbytes, $RXpkts,  $RXerr,   $RXdrop, $RXfifo, $RXframe,
+                $RXcomp,  $RXmulti, $TXbytes, $TXpkts, $TXerr,  $TXdrop,
+                $TXfifo,  $TXframe, $TXcomp,  $TXmulti
             ) = split( /\s+/, $IFData );
             warn "DEBUG: "
-              . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-              . " $RXbytes, $RXpkts,  $RXerr,  $RXdrop, $RXfifo,  $RXframe, $RXcomp, $RXmulti,"
-              . " $TXbytes, $TXpkts,  $TXerr,  $TXdrop, $TXfifo,  $TXframe, $TXcomp, $TXmulti"
-              if ($opt_d);
+                . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+                . " $RXbytes, $RXpkts,  $RXerr,  $RXdrop, $RXfifo,  $RXframe, $RXcomp, $RXmulti,"
+                . " $TXbytes, $TXpkts,  $TXerr,  $TXdrop, $TXfifo,  $TXframe, $TXcomp, $TXmulti"
+                if ($opt_d);
 
-            my $RX_percent =
-                ( $RXpkts > 0 )
-              ? ( $RXerr + $RXdrop + $RXfifo + $RXcomp ) * 100 / $RXpkts
-              : 0;
+            my $RX_percent
+                = ( $RXpkts > 0 )
+                ? ( $RXerr + $RXdrop + $RXfifo + $RXcomp ) * 100 / $RXpkts
+                : 0;
             $Report = sprintf "DAILY: Receive errors for %s = %0.2f%% ",
-              $IFName, $RX_percent;
+                $IFName, $RX_percent;
             if ( $RX_percent < 0.3 )
             {
                 $Report .= '(low)';
@@ -1598,7 +1552,7 @@ sub ReportDaily()
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
             } elsif ( $RX_percent < 1 )
             {
@@ -1609,7 +1563,7 @@ sub ReportDaily()
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
             } else
             {
@@ -1620,13 +1574,13 @@ sub ReportDaily()
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
             } ## end else [ if ( $RX_percent < 0.3...)]
             warn "DEBUG: "
-              . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-              . " $Report"
-              if ($opt_d);
+                . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+                . " $Report"
+                if ($opt_d);
 
             # Calculate the receive speed
             if ( $RXPrevBytes_Daily{"$IFName"} )
@@ -1635,43 +1589,40 @@ sub ReportDaily()
                 if ( $RXPrevBytes_Daily{"$IFName"} > $RXbytes )
                 {
 
-                 # Deal with the 4GB counter limitation of the Linux kernel
+                    # Deal with the 4GB counter limitation of the Linux kernel
                     $Speed = (
-                        (
-                            ( 4294967296 - $RXPrevBytes_Daily{"$IFName"} )
+                        (   ( 4294967296 - $RXPrevBytes_Daily{"$IFName"} )
                             + $RXbytes
                         ) / $opt_I
                     ) * 8;
                 } else
                 {
-                    $Speed =
-                      ( ( $RXbytes - $RXPrevBytes_Daily{"$IFName"} ) /
-                          $opt_I ) * 8;
+                    $Speed = ( ( $RXbytes - $RXPrevBytes_Daily{"$IFName"} )
+                        / $opt_I ) * 8;
                 } ## end else [ if ( $RXPrevBytes_Daily...)]
-                $Report =
-                  sprintf "DAILY: Receive speed for %s = %s bits/s ",
-                  $IFName, commify( sprintf "%.2f", $Speed );
+                $Report = sprintf "DAILY: Receive speed for %s = %s bits/s ",
+                    $IFName, commify( sprintf "%.2f", $Speed );
                 if ( $opt_s eq 'syslog' )
                 {
                     syslog 6, "info %s", $Report;
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
                 warn "DEBUG: "
-                  . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-                  . " $Report"
-                  if ($opt_d);
+                    . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+                    . " $Report"
+                    if ($opt_d);
             } ## end if ( $RXPrevBytes_Daily...)
             $RXPrevBytes_Daily{"$IFName"} = $RXbytes;
 
-            my $TX_percent =
-                ( $TXpkts > 0 )
-              ? ( $TXerr + $TXdrop + $TXfifo + $TXcomp ) * 100 / $TXpkts
-              : 0;
+            my $TX_percent
+                = ( $TXpkts > 0 )
+                ? ( $TXerr + $TXdrop + $TXfifo + $TXcomp ) * 100 / $TXpkts
+                : 0;
             $Report = sprintf "DAILY: Transmit errors for %s = %0.2f%% ",
-              $IFName, $TX_percent;
+                $IFName, $TX_percent;
             if ( $TX_percent < 0.3 )
             {
                 $Report .= '(low)';
@@ -1681,7 +1632,7 @@ sub ReportDaily()
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
             } elsif ( $TX_percent < 1 )
             {
@@ -1692,7 +1643,7 @@ sub ReportDaily()
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
             } else
             {
@@ -1703,13 +1654,13 @@ sub ReportDaily()
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
             } ## end else [ if ( $TX_percent < 0.3...)]
             warn "DEBUG: "
-              . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-              . " $Report"
-              if ($opt_d);
+                . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+                . " $Report"
+                if ($opt_d);
 
             # Calculate the transmit speed
             if ( $TXPrevBytes_Daily{"$IFName"} )
@@ -1718,34 +1669,31 @@ sub ReportDaily()
                 if ( $TXPrevBytes_Daily{"$IFName"} > $TXbytes )
                 {
 
-                 # Deal with the 4GB counter limitation of the Linux kernel
+                    # Deal with the 4GB counter limitation of the Linux kernel
                     $Speed = (
-                        (
-                            ( 4294967296 - $TXPrevBytes_Daily{"$IFName"} )
+                        (   ( 4294967296 - $TXPrevBytes_Daily{"$IFName"} )
                             + $TXbytes
                         ) / $opt_I
                     ) * 8;
                 } else
                 {
-                    $Speed =
-                      ( ( $TXbytes - $TXPrevBytes_Daily{"$IFName"} ) /
-                          $opt_I ) * 8;
+                    $Speed = ( ( $TXbytes - $TXPrevBytes_Daily{"$IFName"} )
+                        / $opt_I ) * 8;
                 } ## end else [ if ( $TXPrevBytes_Daily...)]
-                $Report =
-                  sprintf "DAILY: Transmit speed for %s = %s bits/s ",
-                  $IFName, commify( sprintf "%.2f", $Speed );
+                $Report = sprintf "DAILY: Transmit speed for %s = %s bits/s ",
+                    $IFName, commify( sprintf "%.2f", $Speed );
                 if ( $opt_s eq 'syslog' )
                 {
                     syslog 6, "info %s", $Report;
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
                 warn "DEBUG: "
-                  . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-                  . " $Report"
-                  if ($opt_d);
+                    . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+                    . " $Report"
+                    if ($opt_d);
             } ## end if ( $TXPrevBytes_Daily...)
             $TXPrevBytes_Daily{"$IFName"} = $TXbytes;
         } ## end while ( my $DEVLine = <DEVSTAT>...)
@@ -1764,17 +1712,18 @@ sub ReportDaily()
             my $DiskPart   = '';
             my $DiskReads  = 0;
             my $DiskWrites = 0;
-            if ( $DEVLine =~
-                /^\s*\d+\s+\d+\s+([a-z]d[a-z]\d+)\s+\d+\s+\d+\s+(\d+)\s+\d+\s+\d+\s+(\d+)/o
-              )
+            if ( $DEVLine
+                =~ /^\s*\d+\s+\d+\s+([a-z]d[a-z]\d+)\s+\d+\s+\d+\s+(\d+)\s+\d+\s+\d+\s+\d+\s+(\d+)/o
+                )
             {
                 # [a-z]d[a-z][0-9], eg. sda1
                 $DiskPart   = "$1";
                 $DiskReads  = $2 * 512;
                 $DiskWrites = $3 * 512;
-            } elsif ( $DEVLine =~
-                /^\s*\d+\s+\d+\s+(dm\-\d+)\s+\d+\s+\d+\s+(\d+)\s+\d+\s+\d+\s+(\d+)/o
-              )
+
+            } elsif ( $DEVLine
+                =~ /^\s*\d+\s+\d+\s+(dm\-\d+)\s+\d+\s+\d+\s+(\d+)\s+\d+\s+\d+\s+\d+\s+(\d+)/o
+                )
             {
                 # dm-[0-9], eg. dm-0
                 $DiskPart   = "$1";
@@ -1786,9 +1735,9 @@ sub ReportDaily()
             next unless ( length($DiskPart) );
 
             warn "DEBUG: "
-              . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-              . " $DiskPart $DiskReads $DiskWrites"
-              if ($opt_d);
+                . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+                . " $DiskPart $DiskReads $DiskWrites"
+                if ($opt_d);
 
             # Calculate the read speed for the partition
             if ( $ReadBytes_Daily{"$DiskPart"} )
@@ -1797,31 +1746,29 @@ sub ReportDaily()
                 if ( $ReadBytes_Daily{"$DiskPart"} > $DiskReads )
                 {
 
-                 # Deal with the 4GB counter limitation of the Linux kernel
-                    $Speed =
-                      ( ( 4294967296 - $ReadBytes_Daily{"$DiskPart"} ) +
-                          $DiskReads ) / $opt_I;
+                    # Deal with the 4GB counter limitation of the Linux kernel
+                    $Speed = ( ( 4294967296 - $ReadBytes_Daily{"$DiskPart"} )
+                        + $DiskReads ) / $opt_I;
                 } else
                 {
-                    $Speed =
-                      ( $DiskReads - $ReadBytes_Daily{"$DiskPart"} ) /
-                      $opt_I;
+                    $Speed = ( $DiskReads - $ReadBytes_Daily{"$DiskPart"} )
+                        / $opt_I;
                 } ## end else [ if ( $ReadBytes_Daily{...})]
-                $Report =
-                  sprintf "DAILY: Disk read speed for %s = %s bytes/s ",
-                  $DiskPart, commify( sprintf "%.2f", $Speed );
+                $Report
+                    = sprintf "DAILY: Disk read speed for %s = %s bytes/s ",
+                    $DiskPart, commify( sprintf "%.2f", $Speed );
                 if ( $opt_s eq 'syslog' )
                 {
                     syslog 6, "info %s", $Report;
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
                 warn "DEBUG: "
-                  . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-                  . " $Report"
-                  if ($opt_d);
+                    . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+                    . " $Report"
+                    if ($opt_d);
             } ## end if ( $ReadBytes_Daily{...})
             $ReadBytes_Daily{"$DiskPart"} = $DiskReads;
 
@@ -1832,31 +1779,29 @@ sub ReportDaily()
                 if ( $WriteBytes_Daily{"$DiskPart"} > $DiskWrites )
                 {
 
-                 # Deal with the 4GB counter limitation of the Linux kernel
-                    $Speed =
-                      ( ( 4294967296 - $WriteBytes_Daily{"$DiskPart"} ) +
-                          $DiskWrites ) / $opt_I;
+                    # Deal with the 4GB counter limitation of the Linux kernel
+                    $Speed = ( ( 4294967296 - $WriteBytes_Daily{"$DiskPart"} )
+                        + $DiskWrites ) / $opt_I;
                 } else
                 {
-                    $Speed =
-                      ( $DiskWrites - $WriteBytes_Daily{"$DiskPart"} ) /
-                      $opt_I;
+                    $Speed = ( $DiskWrites - $WriteBytes_Daily{"$DiskPart"} )
+                        / $opt_I;
                 } ## end else [ if ( $WriteBytes_Daily...)]
-                $Report =
-                  sprintf "DAILY: Disk write speed for %s = %s bytes/s ",
-                  $DiskPart, commify( sprintf "%.2f", $Speed );
+                $Report
+                    = sprintf "DAILY: Disk write speed for %s = %s bytes/s ",
+                    $DiskPart, commify( sprintf "%.2f", $Speed );
                 if ( $opt_s eq 'syslog' )
                 {
                     syslog 6, "info %s", $Report;
                 } else
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-                      ": INFO: $Report\n";
+                        ": INFO: $Report\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
                 warn "DEBUG: "
-                  . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-                  . " $Report"
-                  if ($opt_d);
+                    . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+                    . " $Report"
+                    if ($opt_d);
             } ## end if ( $WriteBytes_Daily...)
             $WriteBytes_Daily{"$DiskPart"} = $DiskWrites;
         } ## end while ( my $DEVLine = <DEVSTAT>...)
@@ -1872,12 +1817,12 @@ sub ReportDaily()
         } else
         {
             print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
-              ": INFO: $Report\n";
+                ": INFO: $Report\n";
         } ## end else [ if ( $opt_s eq 'syslog'...)]
         warn "DEBUG: "
-          . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-          . " $Report"
-          if ($opt_d);
+            . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+            . " $Report"
+            if ($opt_d);
     } ## end unless ( system('pgrep mysqld > /dev/null 2>&1'...))
         # Start the next reporting cycle
     $VMLNo_Daily    = 3;
@@ -1915,26 +1860,26 @@ if ($opt_o)
     if ( !-d $opt_o )
     {
         warn
-          "Output path '$opt_o' does not exist - disabling creation of '.csv' files\n";
+            "Output path '$opt_o' does not exist - disabling creation of '.csv' files\n";
         $opt_o = '';
     } ## end if ( !-d $opt_o )
 } ## end if ($opt_o)
 
 # Determine the number of processors in the system
 open( CPUS, '<', '/proc/cpuinfo' )
-  or die "ERROR: Can not determine number of processors\n";
+    or die "ERROR: Can not determine number of processors\n";
 while ( my $CPULine = <CPUS> )
 {
     $CPUNo++ if ( $CPULine =~ /^processor/o );
 } ## end while ( my $CPULine = <CPUS>...)
 close(CPUS);
 warn "DEBUG: "
-  . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-  . " Number of processors = $CPUNo"
-  if ($opt_d);
+    . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+    . " Number of processors = $CPUNo"
+    if ($opt_d);
 die "ERROR: No processors found\n" unless ($CPUNo);
 $ReportTail = sprintf "(HHMMLL for %d processor%s)", $CPUNo,
-  ( ( $CPUNo > 1 ) ? 's' : '' );
+    ( ( $CPUNo > 1 ) ? 's' : '' );
 
 # Become a daemon process (if specified)
 Daemonize if ($opt_D);
@@ -1947,15 +1892,15 @@ if ( open( PF, '>', '/var/run/SysMon.pid' ) )
 } ## end if ( open( PF, '>', '/var/run/SysMon.pid'...))
 
 open( VMS, "-|", "$VMSTAT -n $opt_i" )
-  or die "ERROR: Can not find or start 'vmstat': $!";
+    or die "ERROR: Can not find or start 'vmstat': $!";
 
 # Create the correct output for logging
 if ( $opt_s eq 'syslog' )
 {
     warn "DEBUG: "
-      . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-      . " Logging to syslog via 'daemon' facility"
-      if ($opt_d);
+        . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+        . " Logging to syslog via 'daemon' facility"
+        if ($opt_d);
     openlog "$ProgName", LOG_PID, LOG_DAEMON;
 } else
 {
@@ -1965,11 +1910,11 @@ if ( $opt_s eq 'syslog' )
         $LogFile = "$1";
     } ## end if ( $opt_s =~ /^(\/(?:tmp|var\/log)\/\S+)/...)
     die "ERROR: Logfile must be in /tmp or in /var/log\n"
-      unless ( length($LogFile) );
+        unless ( length($LogFile) );
     warn "DEBUG: "
-      . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-      . " Logging to $LogFile"
-      if ($opt_d);
+        . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+        . " Logging to $LogFile"
+        if ($opt_d);
     open LF, '>', "$LogFile" or die "$@";
 } ## end else [ if ( $opt_s eq 'syslog'...)]
 
@@ -1980,20 +1925,19 @@ while ( my $VMLine = <VMS> )
     $VMLNo_Hourly++;
     $VMLNo_Daily++;
     warn "DEBUG: "
-      . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-      . " vmstat line number = $VMLNo_Interval"
-      if ($opt_d);
+        . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+        . " vmstat line number = $VMLNo_Interval"
+        if ($opt_d);
 
     # Skip 1st three lines of output
     next unless ( $VMLNo_Interval > 3 );
 
     $VMLine =~ s/^\s+//;
     warn "DEBUG: "
-      . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-      . " VMLine = $VMLine"
-      if ($opt_d);
-    my (
-        $RQ,   $BP,   undef, undef, undef, undef, $PI,   undef,
+        . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+        . " VMLine = $VMLine"
+        if ($opt_d);
+    my ($RQ,   $BP,   undef, undef, undef, undef, $PI,   undef,
         undef, undef, undef, undef, undef, undef, undef, $WA
     ) = ( split( /\s+/, $VMLine ) );
     # Update the counters for interval logging
@@ -2012,9 +1956,9 @@ while ( my $VMLine = <VMS> )
     $PageIn_Daily   += $PI;
     $CPUWait_Daily  += $WA;
     warn "DEBUG: "
-      . strftime( "%Y-%m-%d %H:%M:%S", localtime )
-      . " RunQueue = $RQ, Blocked processes = $BP, Paged in memory = $PI, CPUWait = $CPUWait_Interval"
-      if ($opt_d);
+        . strftime( "%Y-%m-%d %H:%M:%S", localtime )
+        . " RunQueue = $RQ, Blocked processes = $BP, Paged in memory = $PI, CPUWait = $CPUWait_Interval"
+        if ($opt_d);
 
     if ( $VMLNo_Interval == ( ( $opt_I / $opt_i ) + 3 ) )
     {
