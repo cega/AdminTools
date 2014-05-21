@@ -41,58 +41,109 @@ then
     ARE_ZIMBRA=1
 fi
 
+function Usage()
+{
+    if [ $ARE_ZIMBRA -ne 0 ]
+    then
+        cat << EOT
+Usage: $0 [options]
+         -i filename   Specify input file with usernames and password
+EOT
+else
+        cat << EOT
+Usage: $0 [options] [account[[,account]...]]
+         -i filename   Specify input file with usernames and password
+
+         On a Zimbra server the input will be created from the list of accounts
+          given as arguments - or for ALL accounts on the server
+         
+EOT
+fi
+        cat << EOT
+
+ Format for input file (one entry per line):
+IMAP-Username,Password
+EOT
+
+    exit 0
+}
+
+# Get possible program options
+INFILE=''
+while getopts hi: OPTION
+do
+    case ${OPTION} in
+    i)  INFILE=$OPTARG
+        ;;
+    *)  Usage
+        ;;
+    esac
+done
+shift $((OPTIND - 1))
+
 # Create a temp directory for all work files
 TMP_DIR=$(mktemp -d DDXXXXXXXX -p "${TMPDIR:-.}" )
 # and ensure it gets removed when this script ends
 trap "rm -rf $TMP_DIR" EXIT
 
 cd $TMP_DIR
+if [ $ARE_ZIMBRA -ne 0 ]
+then
+    # Create the list of accounts and their passwords
+    if [ ! -z "$INFILE" ]
+    then
+        if [ ! -s "$INFILE" ]
+        then
+            INFILE='AccountPasswords.csv'
+            > "$INFILE"
+            if [ $# -gt 0 ]
+            then
+                # Process only the users listed in the arguments
+                for ACCT in $@
+                do
+                    PASS=$(nice zmprov -l ga $ACCT userPassword 2> /dev/null | awk '/^userPassword:/ {print $NF}')
+                    [ -z "$PASS" ] && continue
+                    echo "$ACCT,$PASS" >> $INFILE
+                done
+            else
+                # Process all users
+                for ACCT in $(zmprov -l gaa)
+                do
+                    PASS=$(nice zmprov -l ga $ACCT userPassword 2> /dev/null | awk '/^userPassword:/ {print $NF}')
+                    [ -z "$PASS" ] && continue
+                    echo "$ACCT,$PASS" >> $INFILE
+                done
+            fi
+        fi
+    fi
+fi
+
+# Show the usage if we don't have an input file
+if [ -z "$INFILE" ]
+then
+    Usage
+fi
+if [ ! -f "$INFILE" ]
+then
+    echo "Input file '$INFILE' is not a regular file or does not exist"
+    exit 0
+fi
+if [ ! -s "$INFILE" ]
+then
+    echo "Input file '$INFILE' is empty"
+    exit 0
+fi
+
 # Get the dedup script
 wget -q 'https://raw.github.com/quentinsf/IMAPdedup/master/imapdedup.py' -O imapdedup.py
 # We are done unless we have the script
 [ -s imapdedup.py ] || exit
 chmod 700 imapdedup.py
 
-# Create the list of accounts and their passwords
-> AccountPasswords.csv
-if [ $ARE_ZIMBRA -ne 0 ]
-then
-    if [ $# -gt 0 ]
-    then
-        # Process only the users listed in the arguments
-        for ACCT in $@
-        do
-            PASS=$(nice zmprov -l ga $ACCT userPassword 2> /dev/null | awk '/^userPassword:/ {print $NF}')
-            [ -z "$PASS" ] && continue
-            echo "$ACCT,$PASS" >> AccountPasswords.csv
-        done
-    else
-        # Process all users
-        for ACCT in $(zmprov -l gaa)
-        do
-            PASS=$(nice zmprov -l ga $ACCT userPassword 2> /dev/null | awk '/^userPassword:/ {print $NF}')
-            [ -z "$PASS" ] && continue
-            echo "$ACCT,$PASS" >> AccountPasswords.csv
-        done
-    fi
-else
-    if [ $# -eq 0 ]
-    then
-        cat <<EOT
-Please provide an input file named 'AccountPasswords.csv' as argument to $0 with the following syntax:
-
-IMAP-Username,Password
-EOT
-        exit
-    fi
-
-    # Use the provided file
-    cat $1 > AccountPasswords.csv
-fi
 # We are done unless we have accounts with passwords
-[ -s AccountPasswords.csv ] || exit
+[ -s $INFILE ] || exit
 
-for LINE in $(< AccountPasswords.csv)
+for LINE in $(< $INFILE)
 do
     set ${LINE//,/ }
     ACCOUNT="$1"
