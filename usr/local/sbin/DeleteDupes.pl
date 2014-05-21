@@ -17,7 +17,7 @@
 
 #--------------------------------------------------------------------
 # Set a sensible path for executables
-export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/zimbra/bin
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 #--------------------------------------------------------------------
 # Ensure that only one instance is running
@@ -29,15 +29,16 @@ then
     [ -z "$(ps h -p $MYPID)" ] || exit 0
 fi
 
-
 ARE_ZIMBRA=0
 dpkg -l zimbra-store &> /dev/null
 if [ $? -eq 0 ]
 then
-    ARE_ZIMBRA=1
-
     # We must have a valid account 'zimbra'
     [ -z "$(getent passwd zimbra)" ] && exit 0
+
+    # We are on a Zimbra store server - expand the path
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/zimbra/bin
+    ARE_ZIMBRA=1
 fi
 
 # Create a temp directory for all work files
@@ -47,7 +48,7 @@ trap "rm -rf $TMP_DIR" EXIT
 
 cd $TMP_DIR
 # Get the dedup script
-wget -q 'https://raw.github.com/quentinsf/IMAPdedup/master/imapdedup.py'
+wget -q 'https://raw.github.com/quentinsf/IMAPdedup/master/imapdedup.py' -O imapdedup.py
 # We are done unless we have the script
 [ -s imapdedup.py ] || exit
 chmod 700 imapdedup.py
@@ -84,6 +85,7 @@ IMAP-Username,Password
 EOT
         exit
     fi
+
     # Use the provided file
     cat $1 > AccountPasswords.csv
 fi
