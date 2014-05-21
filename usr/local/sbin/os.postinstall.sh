@@ -47,7 +47,7 @@ THISDOMAIN=${THISHOST#*.}
 
 # Function to convert netmasks into CIDR notation and back
 # See: https://forums.gentoo.org/viewtopic-t-888736-start-0.html
-mask2cdr ()
+function mask2cdr ()
 {
    # Assumes there's no "255." after a non-255 byte in the mask
    local x=${1##*255.}
