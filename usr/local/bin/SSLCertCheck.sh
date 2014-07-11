@@ -46,104 +46,129 @@ THISHOST=$(hostname)
 THISDOMAIN=${THISHOST#*.}
 
 #--------------------------------------------------------------------
+# By default all certs are god for at least one more week!
+RETCODE=0
+
 if [ ! -z "$DEBUG" -o "T$(date '+%-H %-M')" = "T4 40" ]
 then
-        # Check once a day or when running in debug mode
-        if [ -d /etc/apache2 ]
+    # Check once a day or when running in debug mode
+    if [ -d /etc/apache2 ]
+    then
+        NOW=$(date +%s)
+        for CERT in $(grep -h -r '^[[:space:]]*SSLCertificateFile' /etc/apache2/* | awk '{print $2}' | sort -u)
+        do
+            if [ ! -s $CERT ]
+            then
+                [ -z "$DEBUG" ] || echo "Apache SSL certificate '$CERT' does not exist"
+                logger -i -p err -t SSLCERT -- Apache SSL certificate "$CERT" does not exist
+                RETCODE=1
+                continue
+            fi
+            CERT_END=$(openssl x509 -in $CERT -enddate -noout | cut -d= -f2-)
+            CERT_ED=$(date +%s -d "$CERT_END")
+            if [ $(($NOW + 86400)) -gt $CERT_ED ]
+            then
+                [ -z "$DEBUG" ] || echo "Apache SSL certificate '$CERT' expires in less than a day: $CERT_END"
+                logger -i -p crit -t SSLCERT -- Apache SSL certificate "$CERT" expires in less than a day: $CERT_END
+                RETCODE=1
+            elif [ $(($NOW + 604800)) -gt $CERT_ED ]
+            then
+                [ -z "$DEBUG" ] || echo "Apache SSL certificate '$CERT' expires in less than a week: $CERT_END"
+                logger -i -p err -t SSLCERT -- Apache SSL certificate "$CERT" expires in less than a week: $CERT_END
+                RETCODE=1
+            elif [ $(($NOW + 2592000)) -gt $CERT_ED ]
+            then
+                [ -z "$DEBUG" ] || echo "Apache SSL certificate '$CERT' expires in less than 30 days: $CERT_END"
+                logger -i -p warn -t SSLCERT -- Apache SSL certificate "$CERT" expires in less than 30 days: $CERT_END
+            else
+                [ -z "$DEBUG" ] || echo "Apache SSL certificate '$CERT' is valid for more than 30 days: $CERT_END"
+                logger -i -p notice -t SSLCERT -- Apache SSL certificate "$CERT" is valid for more than 30 days: $CERT_END
+            fi
+        done
+    fi
+
+    if [ -d /etc/nginx ]
+    then
+        NOW=$(date +%s)
+        for CERT in $(grep -h -r '^[[:space:]]*ssl_certificate ' /etc/nginx/* | awk '{sub(/;/,"",$2);print $2}' | sort -u)
+        do
+            if [ ! -s $CERT ]
+            then
+                [ -z "$DEBUG" ] || echo "nginx SSL certificate '$CERT' does not exist"
+                logger -i -p err -t SSLCERT -- nginx SSL certificate "$CERT" does not exist
+                RETCODE=1
+                continue
+            fi
+            CERT_END=$(openssl x509 -in $CERT -enddate -noout | cut -d= -f2-)
+            CERT_ED=$(date +%s -d "$CERT_END")
+            if [ $(($NOW + 86400)) -gt $CERT_ED ]
+            then
+                [ -z "$DEBUG" ] || echo "nginx SSL certificate '$CERT' expires in less than a day: $CERT_END"
+                logger -i -p crit -t SSLCERT -- nginx SSL certificate "$CERT" expires in less than a day: $CERT_END
+                RETCODE=1
+            elif [ $(($NOW + 604800)) -gt $CERT_ED ]
+            then
+                [ -z "$DEBUG" ] || echo "nginx SSL certificate '$CERT' expires in less than a week: $CERT_END"
+                logger -i -p err -t SSLCERT -- nginx SSL certificate "$CERT" expires in less than a week: $CERT_END
+                RETCODE=1
+            elif [ $(($NOW + 2592000)) -gt $CERT_ED ]
+            then
+                [ -z "$DEBUG" ] || echo "nginx SSL certificate '$CERT' expires in less than 30 days: $CERT_END"
+                logger -i -p warn -t SSLCERT -- nginx SSL certificate "$CERT" expires in less than 30 days: $CERT_END
+            else
+                [ -z "$DEBUG" ] || echo "nginx SSL certificate '$CERT' is valid for more than 30 days: $CERT_END"
+                logger -i -p notice -t SSLCERT -- nginx SSL certificate "$CERT" is valid for more than 30 days: $CERT_END
+            fi
+        done
+    fi
+
+    if [ -x /usr/sbin/postconf ]
+    then
+        NOW=$(date +%s)
+        for CERT in $(postconf -h smtpd_tls_cert_file)
+        do
+            if [ ! -s $CERT ]
+            then
+                [ -z "$DEBUG" ] || echo "Postfix SSL certificate '$CERT' does not exist"
+                logger -i -p err -t SSLCERT -- Postfix SSL certificate "$CERT" does not exist
+                RETCODE=1
+                continue
+            fi
+            CERT_END=$(openssl x509 -in $CERT -enddate -noout | cut -d= -f2-)
+            CERT_ED=$(date +%s -d "$CERT_END")
+            if [ $(($NOW + 86400)) -gt $CERT_ED ]
+            then
+                [ -z "$DEBUG" ] || echo "Postfix SSL certificate '$CERT' expires in less than a day: $CERT_END"
+                logger -i -p crit -t SSLCERT -- Postfix SSL certificate "$CERT" expires in less than a day: $CERT_END
+                RETCODE=1
+            elif [ $(($NOW + 604800)) -gt $CERT_ED ]
+            then
+                [ -z "$DEBUG" ] || echo "Postfix SSL certificate '$CERT' expires in less than a week: $CERT_END"
+                logger -i -p err -t SSLCERT -- Postfix SSL certificate "$CERT" expires in less than a week: $CERT_END
+                RETCODE=1
+            elif [ $(($NOW + 2592000)) -gt $CERT_ED ]
+            then
+                [ -z "$DEBUG" ] || echo "Postfix SSL certificate '$CERT' expires in less than 30 days: $CERT_END"
+                logger -i -p warn -t SSLCERT -- Postfix SSL certificate "$CERT" expires in less than 30 days: $CERT_END
+            else
+                [ -z "$DEBUG" ] || echo "Postfix SSL certificate '$CERT' is valid for more than 30 days: $CERT_END"
+                logger -i -p notice -t SSLCERT -- Postfix SSL certificate "$CERT" is valid for more than 30 days: $CERT_END
+            fi
+        done
+    fi
+
+    if [ -x /opt/zimbra/bin/zmcertmgr ]
+    then
+        /opt/zimbra/bin/zmcertmgr checkcrtexpiration -days 7 all
+        if [ $? -ne 0 ]
         then
-            NOW=$(date +%s)
-            for CERT in $(grep -h -r '^[[:space:]]*SSLCertificateFile' /etc/apache2/* | awk '{print $2}' | sort -u)
-            do
-                if [ ! -s $CERT ]
-                then
-                    [ -z "$DEBUG" ] || echo "Apache SSL certificate '$CERT' does not exist"
-                    logger -i -p err -t SSLCERT -- Apache SSL certificate "$CERT" does not exist
-                    continue
-                fi
-                CERT_END=$(openssl x509 -in $CERT -enddate -noout | cut -d= -f2-)
-                CERT_ED=$(date +%s -d "$CERT_END")
-                if [ $(($NOW + 86400)) -gt $CERT_ED ]
-                then
-                    [ -z "$DEBUG" ] || echo "Apache SSL certificate '$CERT' expires in less than a day: $CERT_END"
-                    logger -i -p crit -t SSLCERT -- Apache SSL certificate "$CERT" expires in less than a day: $CERT_END
-                elif [ $(($NOW + 604800)) -gt $CERT_ED ]
-                then
-                    [ -z "$DEBUG" ] || echo "Apache SSL certificate '$CERT' expires in less than a week: $CERT_END"
-                    logger -i -p err -t SSLCERT -- Apache SSL certificate "$CERT" expires in less than a week: $CERT_END
-                elif [ $(($NOW + 2592000)) -gt $CERT_ED ]
-                then
-                    [ -z "$DEBUG" ] || echo "Apache SSL certificate '$CERT' expires in less than 30 days: $CERT_END"
-                    logger -i -p warn -t SSLCERT -- Apache SSL certificate "$CERT" expires in less than 30 days: $CERT_END
-                else
-                    [ -z "$DEBUG" ] || echo "Apache SSL certificate '$CERT' is valid for more than 30 days: $CERT_END"
-                    logger -i -p notice -t SSLCERT -- Apache SSL certificate "$CERT" is valid for more than 30 days: $CERT_END
-                fi
-            done
+            [ -z "$DEBUG" ] || echo "At least one Zimbra SSL certificate expires in less than 7 days: $CERT_END"
+            logger -i -p warn -t SSLCERT -- At least one Zimbra SSL certificate expires in less than 7 days, run /opt/zimbra/bin/zmcertmgr checkcrtexpiration -days 7 all
+            RETCODE=1
         fi
-        if [ -d /etc/nginx ]
-        then
-            NOW=$(date +%s)
-            for CERT in $(grep -h -r '^[[:space:]]*ssl_certificate ' /etc/nginx/* | awk '{sub(/;/,"",$2);print $2}' | sort -u)
-            do
-                if [ ! -s $CERT ]
-                then
-                    [ -z "$DEBUG" ] || echo "nginx SSL certificate '$CERT' does not exist"
-                    logger -i -p err -t SSLCERT -- nginx SSL certificate "$CERT" does not exist
-                    continue
-                fi
-                CERT_END=$(openssl x509 -in $CERT -enddate -noout | cut -d= -f2-)
-                CERT_ED=$(date +%s -d "$CERT_END")
-                if [ $(($NOW + 86400)) -gt $CERT_ED ]
-                then
-                    [ -z "$DEBUG" ] || echo "nginx SSL certificate '$CERT' expires in less than a day: $CERT_END"
-                    logger -i -p crit -t SSLCERT -- nginx SSL certificate "$CERT" expires in less than a day: $CERT_END
-                elif [ $(($NOW + 604800)) -gt $CERT_ED ]
-                then
-                    [ -z "$DEBUG" ] || echo "nginx SSL certificate '$CERT' expires in less than a week: $CERT_END"
-                    logger -i -p err -t SSLCERT -- nginx SSL certificate "$CERT" expires in less than a week: $CERT_END
-                elif [ $(($NOW + 2592000)) -gt $CERT_ED ]
-                then
-                    [ -z "$DEBUG" ] || echo "nginx SSL certificate '$CERT' expires in less than 30 days: $CERT_END"
-                    logger -i -p warn -t SSLCERT -- nginx SSL certificate "$CERT" expires in less than 30 days: $CERT_END
-                else
-                    [ -z "$DEBUG" ] || echo "nginx SSL certificate '$CERT' is valid for more than 30 days: $CERT_END"
-                    logger -i -p notice -t SSLCERT -- nginx SSL certificate "$CERT" is valid for more than 30 days: $CERT_END
-                fi
-            done
-        fi
-        if [ -x /usr/sbin/postconf ]
-        then
-            NOW=$(date +%s)
-            for CERT in $(postconf -h smtpd_tls_cert_file)
-            do
-                if [ ! -s $CERT ]
-                then
-                    [ -z "$DEBUG" ] || echo "Postfix SSL certificate '$CERT' does not exist"
-                    logger -i -p err -t SSLCERT -- Postfix SSL certificate "$CERT" does not exist
-                    continue
-                fi
-                CERT_END=$(openssl x509 -in $CERT -enddate -noout | cut -d= -f2-)
-                CERT_ED=$(date +%s -d "$CERT_END")
-                if [ $(($NOW + 86400)) -gt $CERT_ED ]
-                then
-                    [ -z "$DEBUG" ] || echo "Postfix SSL certificate '$CERT' expires in less than a day: $CERT_END"
-                    logger -i -p crit -t SSLCERT -- Postfix SSL certificate "$CERT" expires in less than a day: $CERT_END
-                elif [ $(($NOW + 604800)) -gt $CERT_ED ]
-                then
-                    [ -z "$DEBUG" ] || echo "Postfix SSL certificate '$CERT' expires in less than a week: $CERT_END"
-                    logger -i -p err -t SSLCERT -- Postfix SSL certificate "$CERT" expires in less than a week: $CERT_END
-                elif [ $(($NOW + 2592000)) -gt $CERT_ED ]
-                then
-                    [ -z "$DEBUG" ] || echo "Postfix SSL certificate '$CERT' expires in less than 30 days: $CERT_END"
-                    logger -i -p warn -t SSLCERT -- Postfix SSL certificate "$CERT" expires in less than 30 days: $CERT_END
-                else
-                    [ -z "$DEBUG" ] || echo "Postfix SSL certificate '$CERT' is valid for more than 30 days: $CERT_END"
-                    logger -i -p notice -t SSLCERT -- Postfix SSL certificate "$CERT" is valid for more than 30 days: $CERT_END
-                fi
-            done
-        fi
+    fi
 fi
 
 #--------------------------------------------------------------------
 # We are done
-exit 0
+exit $RETCODE
