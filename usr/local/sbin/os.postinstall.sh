@@ -698,6 +698,15 @@ do
     then
         [ \$(< \${DEV}/queue/read_ahead_kb) -lt 2048 ] && echo 2048 > \${DEV}/queue/read_ahead_kb
     fi
+    if [ -f \${DEV}/device/vendor ]
+    then
+        if [ ! -z "\$(egrep '(DELL|3ware|Areca)' \${DEV}/device/vendor)" ]
+        then
+            # Use "noop" for 3ware/Dell/Areca (Raid) units
+            [ -w \${DEV}/queue/scheduler ] && echo noop > \${DEV}/queue/scheduler
+            continue
+        fi
+    fi
     if [ \$IS_VIRTUAL -eq 0 ]
     then
         [ -w \${DEV}/queue/scheduler ] && echo cfq > \${DEV}/queue/scheduler
