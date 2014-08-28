@@ -7,3 +7,4 @@ ms - EMail server using postfix, mysql, postfixadmin and dovecot
 mx - MX server with antivirus and antispam filtering (inbound email)
 backupmx - Backup MX server with antivirus filtering (inbound email)
 mo - Email relay for sending emails (outbound email)
+zenoss - Network management server
