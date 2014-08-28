@@ -693,8 +693,6 @@ do
     fi
 done
 EORC
-exit
-
 
 #--------------------------------------------------------------------
 # Use the automated script from GitHUB
