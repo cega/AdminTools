@@ -498,6 +498,19 @@ EOT
 ##########
 apt-get install amavisd-new spamassassin zoo
 apt-get install libnet-dns-perl pyzor razor arj bzip2 cabextract cpio file gzip nomarch pax unzip zip
+if [ -s /etc/lsb-release ]
+then
+    source /etc/lsb-release
+    cat << EOT > /etc/apt/preferences.d/clamav
+Package: clamav*
+Pin: release a=${DISTRIB_CODENAME}-backports
+Pin-Priority: 500  
+
+Package: libclamav6
+Pin: release a=${DISTRIB_CODENAME}-backports
+Pin-Priority: 500  
+EOT
+fi
 apt-get install clamav-daemon clamav-freshclam clamav-unofficial-sigs
 freshclam -v
 service clamav-daemon restart

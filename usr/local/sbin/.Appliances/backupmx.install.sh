@@ -96,6 +96,20 @@ vi /etc/default/ppolicyd
 ###########
 # clamsmtpd
 ###########
+if [ -s /etc/lsb-release ]
+then
+    source /etc/lsb-release
+    cat << EOT > /etc/apt/preferences.d/clamav
+Package: clamav*
+Pin: release a=${DISTRIB_CODENAME}-backports
+Pin-Priority: 500  
+
+Package: libclamav6
+Pin: release a=${DISTRIB_CODENAME}-backports
+Pin-Priority: 500  
+EOT
+fi
+
 apt-get install clamsmtp clamav-unofficial-sigs
 cat << EOT > /etc/clamsmtpd.conf
 # ------------------------------------------------------------------------------
