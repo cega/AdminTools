@@ -229,8 +229,8 @@ iptables -t mangle -I POSTROUTING -p tcp -m tos --tos Minimize-Delay -j tosfix
 
 # Interface No 1a - frontend (public).
 # The purpose of this interface is to control the traffic
-# on the eth0 interface with IP 172.16.1.224 (net: "${LOCALNET}/${CIDRMASK}").
-interface eth0 internal_1 src "${LOCALNET}/${CIDRMASK}" dst ${LOCALIP}
+# on the eth0 interface with IP ${LOCALIP} (net: "${LOCALNET}/${CIDRMASK}").
+interface eth0 internal_1 src "\${home_net}" dst ${LOCALIP}
 
         # The default policy is DROP. You can be more polite with REJECT.
         # Prefer to be polite on your own clients to prevent timeouts.
@@ -253,8 +253,8 @@ interface eth0 internal_1 src "${LOCALNET}/${CIDRMASK}" dst ${LOCALIP}
 
 # Interface No 1b - frontend (public).
 # The purpose of this interface is to control the traffic
-# from/to unknown networks behind the default gateway 172.16.1.1
-interface eth0 external_1 src not "${LOCALNET}/${CIDRMASK}" dst ${LOCALIP}
+# from/to unknown networks behind the default gateway
+interface eth0 external_1 src not "\${home_net}" dst ${LOCALIP}
 
         # The default policy is DROP. You can be more polite with REJECT.
         # Prefer to be polite on your own clients to prevent timeouts.
@@ -266,7 +266,7 @@ interface eth0 external_1 src not "${LOCALNET}/${CIDRMASK}" dst ${LOCALIP}
 
         # Here are the services listening on eth0.
         # TODO: Normally, you will have to remove those not needed.
-        server "ssh" accept src "\${home_net} \${bluc}"
+        server "ssh" accept src "\${bluc}"
         #server "smtp imaps smtps http https" accept
         server ping accept
 
@@ -654,6 +654,11 @@ do
     RA=\$(blockdev --getra /dev/\$DEV)
     [ \$RA -ne \$SECTORS ] && blockdev --setra \$SECTORS /dev/\$DEV
 done
+for DEV in \$( ls /dev/xvd[a-z][0-9] | awk '{sub(/\/dev\//,"");printf "%s ",\$1}')
+do
+    RA=\$(blockdev --getra /dev/\$DEV)
+    [ \$RA -ne \$SECTORS ] && blockdev --setra \$SECTORS /dev/\$DEV
+done
 for DEV in \$( ls /dev/mapper/* | awk '{sub(/\/dev\/mapper\//,"");printf "%s ",\$1}')
 do
     [ "T\$DEV" = 'Tcontrol' ] && continue
@@ -691,7 +696,7 @@ then
     IS_VIRTUAL=3
 fi
 cd /sys/block
-for DEV in [vhs]d?
+for DEV in [vhs]d? xvd?
 do
     [ -w \${DEV}/queue/nr_requests ] && echo 512 > \${DEV}/queue/nr_requests
     if [ -w \${DEV}/queue/read_ahead_kb ]
