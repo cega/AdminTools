@@ -262,7 +262,7 @@ then
             done | sort -k 2 -n -r | head >> /tmp/\$\$
 
             sendemail -q -f root@\$THISHOST -u "\$THISHOST: Swap usage over 256MB" \
-              -t $MAILRECIP -s mail -o tls=no < /tmp/\$\$
+              -t \$MAILRECIP -s mail -o tls=no < /tmp/\$\$
         fi
     fi
 
@@ -276,13 +276,13 @@ then
             # We have a real problem!
             echo "" | sendemail -q -f root@\$THISHOST \
               -u "\$THISHOST: EXTREME HIGH DISK USAGE on '\$FS': \${PERC}%" \
-              -t $MAILRECIP -s mail -o tls=no
+              -t \$MAILRECIP -s mail -o tls=no
         elif [ \$PERC -gt 85 ]
         then
             # We should pay attention
             echo "" | sendemail -q -f root@\$THISHOST \
               -u "\$THISHOST: High disk usage on '\$FS': \${PERC}%" \
-              -t $MAILRECIP -s mail -o tls=no
+              -t \$MAILRECIP -s mail -o tls=no
         fi
     done
 fi
