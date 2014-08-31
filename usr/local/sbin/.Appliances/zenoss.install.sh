@@ -202,6 +202,8 @@ export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 PROG=\${0##*/}
 ionice -c2 -n7 -p \$\$
 
+MAILRECIP='consult@btoy1.net'  # <=== ADAPT!!!
+
 #--------------------------------------------------------------------
 # Ensure that only one instance is running
 LOCKFILE=/tmp/\$PROG.lock
@@ -221,11 +223,13 @@ DEBUG=''
 CURMIN=\$(date +%-M)
 CURHR=\$(date +%-H)
 
+
 #--------------------------------------------------------------------
 # Every 5 minutes:
-#SSD_DRIVES_ONLY#if [ "T\$DEBUG" = 'T-v' -o \$((\$CURMIN && 5)) -eq 2 ]
-#SSD_DRIVES_ONLY#then
-#SSD_DRIVES_ONLY#    # Discard unused blocks on supported file systems
+if [ "T\$DEBUG" = 'T-v' -o \$((\$CURMIN % 5)) -eq 2 ]
+then
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # Discard unused blocks on supported file systems
 #SSD_DRIVES_ONLY#    if [ -x /sbin/fstrim-all ]
 #SSD_DRIVES_ONLY#    then
 #SSD_DRIVES_ONLY#        # Use the script providing by Linux distribution
@@ -236,7 +240,52 @@ CURHR=\$(date +%-H)
 #SSD_DRIVES_ONLY#            fstrim \$DEBUG \$FS
 #SSD_DRIVES_ONLY#        done
 #SSD_DRIVES_ONLY#    fi
-#SSD_DRIVES_ONLY#fi
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # Check whether we use more than 256MB swap
+    SW_TOTAL=\$(awk '/^SwapTotal/ {print \$2}' /proc/meminfo)
+    SW_FREE=\$(awk '/^SwapFree/ {print \$2}' /proc/meminfo)  
+    SW_USED=\$((\$SW_TOTAL - \$SW_FREE))
+    if [ \$SW_USED -gt 262144 ]
+    then
+        # Using more than 256MB swap
+        logger -it HealthCheck -p daemon.info -- "Swap usage over 256MB"
+        if [ \$((\$CURMIN % 30)) -eq 11 ]
+        then
+            # Send an email every 30 minutes
+            echo "Used swap: \${SW_USED}KB" > /tmp/\$\$
+
+            # Get the top 10 swap eating processes
+            for F in /proc/*/status
+            do
+                awk '/^(Pid|VmSwap)/{printf \$2 " " \$3}END{ print ""}' \$F
+            done | sort -k 2 -n -r | head >> /tmp/\$\$
+
+            sendemail -q -f root@\$THISHOST -u "\$THISHOST: Swap usage over 256MB" \
+              -t $MAILRECIP -s mail -o tls=no < /tmp/\$\$
+        fi
+    fi
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # Check filesystem usage
+    df -PTh | awk '/ext3|ext4|xfs|btrfs/ {print \$7" "int(\$6)}' | while read FS PERC
+    do
+        logger -it HealthCheck -p daemon.info -- "Filesystem usage on '\$FS' is \${PERC}%"
+        if [ \$PERC -gt 90 ]
+        then
+            # We have a real problem!
+            echo "" | sendemail -q -f root@\$THISHOST \
+              -u "\$THISHOST: EXTREME HIGH DISK USAGE on '\$FS': \${PERC}%" \
+              -t $MAILRECIP -s mail -o tls=no
+        elif [ \$PERC -gt 85 ]
+        then
+            # We should pay attention
+            echo "" | sendemail -q -f root@\$THISHOST \
+              -u "\$THISHOST: High disk usage on '\$FS': \${PERC}%" \
+              -t $MAILRECIP -s mail -o tls=no
+        fi
+    done
+fi
 
 #--------------------------------------------------------------------
 # Hourly:
