@@ -306,7 +306,8 @@ fi
 # Postfix admin frontend (adapt to newer version as shown
 #  on http://sourceforge.net/projects/postfixadmin/files/postfixadmin/)
 ##########
-wget -O /usr/local/src/postfixadmin_all.deb http://sourceforge.net/projects/postfixadmin/files/postfixadmin/postfixadmin-2.3.5/postfixadmin_2.3.5-1_all.deb/download
+wget -O /usr/local/src/postfixadmin_all.deb \
+  http://sourceforge.net/projects/postfixadmin/files/postfixadmin/postfixadmin-2.91/postfixadmin_2.91-1_all.deb/download
 
 # Setup the package, its dependencies and the database
 apt-get install dbconfig-common libc-client2007e mlock php5-imap wwwconfig-common postfix-mysql sasl2-bin
@@ -340,6 +341,64 @@ deny from all
 </Files>
 EOT
 
+# Adapt the apache default page config
+if [ -z "$(grep postfixadmin /etc/apache2/sites-enabled/default.conf)" ]
+then
+    rm -f /etc/apache2/sites-enabled/default.conf
+    cat << EOT > /etc/apache2/sites-enabled/default.conf
+<VirtualHost *:80>
+	# The ServerName directive sets the request scheme, hostname and port that
+	# the server uses to identify itself. This is used when creating
+	# redirection URLs. In the context of virtual hosts, the ServerName
+	# specifies what hostname must appear in the request's Host: header to
+	# match this virtual host. For the default virtual host (this file) this
+	# value is not decisive as it is used as a last resort host regardless.
+	# However, you must set it for any further virtual host explicitly.
+	#ServerName www.example.com
+
+	ServerAdmin webmaster@localhost
+	DocumentRoot /var/www/html
+
+	# Available loglevels: trace8, ..., trace1, debug, info, notice, warn,
+	# error, crit, alert, emerg.
+	# It is also possible to configure the loglevel for particular
+	# modules, e.g.
+	#LogLevel info ssl:warn
+
+	ErrorLog \${APACHE_LOG_DIR}/error.log
+	CustomLog \${APACHE_LOG_DIR}/access.log combined
+
+	# For most configuration files from conf-available/, which are
+	# enabled or disabled at a global level, it is possible to
+	# include a line for only one particular virtual host. For example the
+	# following line enables the CGI configuration for this host only
+	# after it has been globally disabled with "a2disconf".
+	#Include conf-available/serve-cgi-bin.conf
+	Include conf.d/postfixadmin
+</VirtualHost>
+
+# vim: syntax=apache ts=4 sw=4 sts=4 sr noet
+EOT
+fi
+
+# Adapt the main index file
+if [ -z "$(grep B-LUC /var/www/html/index.html)" ]
+then
+    cat << EOT > /var/www/html/index.html
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome</title>
+ <meta name="copyright" content="B-LUC Consulting">
+ <meta http-equiv="refresh" content="2;url=postfixadmin/">
+</head>
+<body>
+ You will be redirected to the Postfix Administrator in two seconds. If
+ you aren't forwarded to the it, please click <a href=postfixadmin/> here </a>.
+</body>
+</html>
+EOT
+fi
 # Adapt the database type to "mysqli"
 perl -p -i -e 's/dbtype=.mysql.;/dbtype="mysqli";/' /etc/postfixadmin/dbconfig.inc.php
 
@@ -349,7 +408,7 @@ then
     cat << EOT
 Point your browser to http://$LOCALIP/postfixadmin/setup.php.
 
-Follow the instructions on that page to choose 'eenEyff5' as the
+Follow the instructions on that page to choose a suitable
  setup password, and generate a hash of that password.
 
 Add that hash to the configuration file '/etc/postfixadmin/config.inc.php' and save it:
@@ -360,7 +419,8 @@ Add that hash to the configuration file '/etc/postfixadmin/config.inc.php' and s
 \$CONF['setup_password'] = '...a long hash string...';
 
 Choose "postmaster@btoy1.net" as the administrative username and
- "Dog4Leak" as its password.
+ "Dog4Leak" as its password (or any other suitable combination
+ of username and password).
 EOT
     read -p 'Press <ENTER> to continue' YN
 fi
