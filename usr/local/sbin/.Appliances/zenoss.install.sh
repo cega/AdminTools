@@ -56,11 +56,17 @@ THISDOMAIN=${THISHOST#*.}
 # Adapt firehol.conf
 if [ -d /etc/firehol ]
 then
+    if [ ! -z "$(grep em1 /proc/net/dev)" ]
+    then
+        NETIF='em1'
+    else
+        NETIF='eth0'
+    fi
     # Adapt firehol config
     if [ -z "$(grep bellow /etc/firehol/firehol.conf)" ]
     then
-        LOCALIP=$(ifconfig em1 | sed -n "s/.*inet addr:\([0-9.]*\).*/\1/p")
-        LOCALMASK=$(ifconfig em1 | sed -n -e 's/.*Mask:\(.*\)$/\1/p')
+        LOCALIP=$(ifconfig ${NETIF} | sed -n "s/.*inet addr:\([0-9.]*\).*/\1/p")
+        LOCALMASK=$(ifconfig ${NETIF} | sed -n -e 's/.*Mask:\(.*\)$/\1/p')
         # From: http://www.routertech.org/viewtopic.php?t=1609
         l="${LOCALIP%.*}";r="${LOCALIP#*.}";n="${LOCALMASK%.*}";m="${LOCALMASK#*.}"
         LOCALNET=$((${LOCALIP%%.*}&${LOCALMASK%%.*})).$((${r%%.*}&${m%%.*})).$((${l##*.}&${n##*.})).$((${LOCALIP##*.}&${LOCALMASK##*.}))
@@ -110,18 +116,18 @@ redirect to 8080 proto tcp dport 80
 
 # Interface No 1a - frontend (public).
 # The purpose of this interface is to control the traffic
-# on the em1 interface with IP 172.16.1.224 (net: "${LOCALNET}/${CIDRMASK}").
-interface em1 internal_1 src "${LOCALNET}/${CIDRMASK}" dst ${LOCALIP}
+# on the ${NETIF} interface with IP ${LOCALIP} (net: "${LOCALNET}/${CIDRMASK}").
+interface ${NETIF} internal_1 src "${LOCALNET}/${CIDRMASK}" dst ${LOCALIP}
 
         # The default policy is DROP. You can be more polite with REJECT.
         # Prefer to be polite on your own clients to prevent timeouts.
         policy drop
 
-        # If you don't trust the clients behind em1 (net "${LOCALNET}/${CIDRMASK}"),
+        # If you don't trust the clients behind ${NETIF} (net "${LOCALNET}/${CIDRMASK}"),
         # add something like this.
         protection strong 75/sec 50
 
-        # Here are the services listening on em1.
+        # Here are the services listening on ${NETIF}.
         # TODO: Normally, you will have to remove those not needed.
         server "ssh" accept src "\${home_net} \${bluc}"
         # As per http://community.zenoss.org/docs/DOC-10222
@@ -129,30 +135,30 @@ interface em1 internal_1 src "${LOCALNET}/${CIDRMASK}" dst ${LOCALIP}
         server "http zenoss syslog snmpd" accept
         server ping accept
 
-        # The following means that this machine can REQUEST anything via em1.
+        # The following means that this machine can REQUEST anything via ${NETIF}.
         # TODO: On production servers, avoid this and allow only the
         #       client services you really need.
         client all accept
 
 # Interface No 1b - frontend (public).
 # The purpose of this interface is to control the traffic
-# from/to unknown networks behind the default gateway 172.16.1.1
-interface em1 external_1 src not "${LOCALNET}/${CIDRMASK}" dst ${LOCALIP}
+# from/to unknown networks behind the default gateway
+interface ${NETIF} external_1 src not "${LOCALNET}/${CIDRMASK}" dst ${LOCALIP}
 
         # The default policy is DROP. You can be more polite with REJECT.
         # Prefer to be polite on your own clients to prevent timeouts.
         policy drop
 
-        # If you don't trust the clients behind em1 (net not "\${UNROUTABLE_IPS} ${LOCALNET}/${CIDRMASK}"),
+        # If you don't trust the clients behind ${NETIF} (net not "\${UNROUTABLE_IPS} ${LOCALNET}/${CIDRMASK}"),
         # add something like this.
         protection strong 75/sec 50
 
-        # Here are the services listening on em1.
+        # Here are the services listening on ${NETIF}.
         # TODO: Normally, you will have to remove those not needed.
         server "ssh" accept src "\${home_net} \${bluc}"
         server ping accept
 
-        # The following means that this machine can REQUEST anything via em1.
+        # The following means that this machine can REQUEST anything via ${NETIF}.
         # TODO: On production servers, avoid this and allow only the
         #       client services you really need.
         client all accept
