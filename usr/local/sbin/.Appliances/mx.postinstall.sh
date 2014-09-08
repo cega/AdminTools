@@ -20,7 +20,7 @@
 # Incoming port            Component  Checks performed  Outgoing port
 # *:25 (smtpd)             postfix    ppolicyd, rbl     127.0.0.1:11125 (lmtp)
 # *:465 (smtpd[s])         postfix    ppolicyd, rbl     127.0.0.1:11125 (lmtp)
-# 127.0.0.1:11125 (lmtpd)  dspam      antispam          127.0.0.1:10025 (smtp)
+#(optional) 127.0.0.1:11124 (lmtpd)  dspam      antispam          127.0.0.1:10025 (smtp)
 # 127.0.0.1:10025 (smtpd)  amavisd    antivirus         127.0.0.1:10026 (smtp)
 # 127.0.0.1:10026 (smtpd)  postfix                      *:25 (smtp)
 # *:587 (submission)       postfix                      *.25 (smtp)
