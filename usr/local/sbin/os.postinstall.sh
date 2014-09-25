@@ -189,6 +189,10 @@ then
         l="${LOCALIP%.*}";r="${LOCALIP#*.}";n="${LOCALMASK%.*}";m="${LOCALMASK#*.}"
         LOCALNET=$((${LOCALIP%%.*}&${LOCALMASK%%.*})).$((${r%%.*}&${m%%.*})).$((${l##*.}&${n##*.})).$((${LOCALIP##*.}&${LOCALMASK##*.}))
         CIDRMASK=$(mask2cdr $LOCALMASK)
+
+        # Install packages for Geo-based firewall rules
+        apt-get install xtables-addons-dkms geoip-database libtext-csv-perl unzip
+
         cat << EOT > /etc/firehol/firehol.conf
 #!/sbin/firehol
 # : firehol.sh,v 1.273 2008/07/31 00:46:41 ktsaou Exp $
@@ -226,6 +230,14 @@ iptables -t mangle -A tosfix -m limit --limit 2/s --limit-burst 10 -j RETURN
 iptables -t mangle -A tosfix -j TOS --set-tos Maximize-Throughput
 iptables -t mangle -A tosfix -j RETURN
 iptables -t mangle -I POSTROUTING -p tcp -m tos --tos Minimize-Delay -j tosfix
+
+# See also /usr/local/sbin/LocalHealthCheck.sh
+#  for database updates
+action chain GEOIP_GEN ACCEPT
+iptables -I GEOIP_GEN -m geoip --src-cc CN,UA,RU,KP -j DROP
+iptables -I GEOIP_GEN -m geoip --src-cc CN,UA,RU,KP -j LOG --log-prefix "Geo-based rejection "
+iptables -I GEOIP_GEN -m geoip --dst-cc CN,UA,RU,KP -j DROP
+iptables -I GEOIP_GEN -m geoip --dst-cc CN,UA,RU,KP -j LOG --log-prefix "Geo-based rejection "
 
 # Interface No 1a - frontend (public).
 # The purpose of this interface is to control the traffic
@@ -267,8 +279,8 @@ interface eth0 external_1 src not "\${home_net}" dst ${LOCALIP}
         # Here are the services listening on eth0.
         # TODO: Normally, you will have to remove those not needed.
         server "ssh" accept src "\${bluc}"
-        #server "smtp imaps smtps http https" accept
-        server ping accept
+        #server "smtp imaps smtps http https" GEOIP_GEN
+        server ping GEOIP_GEN
 
         # Portscan defense
         iptables -A in_external_1 -m psd -j LOG --log-prefix 'IN-ISP-Portscan'
@@ -277,7 +289,7 @@ interface eth0 external_1 src not "\${home_net}" dst ${LOCALIP}
         # The following means that this machine can REQUEST anything via eth0.
         # TODO: On production servers, avoid this and allow only the
         #       client services you really need.
-        client all accept
+        client all GEOIP_GEN
 EOT
     fi
     sed -ie 's/^[[:space:]]*START_FIREHOL.*/START_FIREHOL=YES/' /etc/default/firehol

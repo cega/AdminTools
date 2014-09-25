@@ -51,6 +51,24 @@ HR_NOW=$1
 MIN_NOW=$2
 
 #--------------------------------------------------------------------
+# Once a day:
+if [ "T$HR_NOW:$MIN_NOW" = 'T 3:33' ]
+then
+    # Update the GEOIP databases for iptables
+    # Requires: libtext-csv-perl unzip
+    XTP=/usr/lib/xtables-addons
+    if [ -d $XTP ]
+    then
+        mkdir -p /usr/share/xt_geoip
+        cd /tmp
+        sed -i -e 's/gzip -d/gzip -fd/' \$XTP/xt_geoip_dl
+        [ -x \$XTP/xt_geoip_dl ] && \$XTP/xt_geoip_dl &> /dev/null
+        [ -x \$XTP/xt_geoip_build ] && \$XTP/xt_geoip_build -D /usr/share/xt_geoip GeoIP*.csv &> /dev/null
+    fi
+fi
+
+#--------------------------------------------------------------------
+# Every five minutes:
 if [ $(($MIN_NOW % 5)) -eq 2 ]
 then
     if [ -d /etc/update-motd.d ]
