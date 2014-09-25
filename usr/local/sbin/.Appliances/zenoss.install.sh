@@ -332,15 +332,10 @@ trap "rm -f \$LOCKFILE /tmp/\$\$*" EXIT
 echo "\$\$" > \$LOCKFILE            
 
 #--------------------------------------------------------------------
-# Backup just Zenoss databases (individually)
+# Backup Zenoss
 mkdir -p /opt/mysql-backups
-for DB in \$(mysql -A -e 'show databases' | grep '^z')
-do
-    TODAY=\$(date +%A)
-    mysqldump --quick --opt --allow-keywords --hex-blob \
-      --quote-names --flush-logs --lock-all-tables \
-      --result-file=/opt/mysql-backups/\${DB}.\${TODAY}.dump \$DB
-done
+export ZENHOME='/usr/local/zenoss'
+\$ZENHOME/bin/zenbackup --file=/opt/mysql-backups/zenbackup.\$(date +%A).dump.tgz
 
 #--------------------------------------------------------------------
 # We are done 
