@@ -522,14 +522,22 @@ EOSC
 
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Tune the network stack for performance
-# See http://datatag.web.cern.ch/datatag/howto/tcp.html
-if [ -f /lib/modules/2.6.32-279.el6.x86_64/kernel/net/ipv4/tcp_cubic.ko ]
+if [ -f /lib/modules/\$(uname -r)/kernel/net/ipv4/tcp_htpc.ko ]
 then
-    modprobe tcp_cubic
+    # See https://calomel.org/network_performance.html
+    CALG=htpc
+elif [ -f /lib/modules/\$(uname -r)/kernel/net/ipv4/tcp_cubic.ko ]
+then
+    # See http://datatag.web.cern.ch/datatag/howto/tcp.html
+    CALG=cubic
+fi
+    modprobe tcp_\$CALG
     cat << EOSC >> /tmp/sysctl.conf
 # Use modern congestion control algorithm
-net.ipv4.tcp_congestion_control = cubic
+net.ipv4.tcp_congestion_control = \$CALG
 
+# No slowness for idle connections
+net.ipv4.tcp_slow_start_after_idle = 0
 EOSC
 fi
 
@@ -643,6 +651,16 @@ do
     ifconfig \$ETH txqueuelen 2048
 done
 
+# Increase initial window for TCP on ALL routes
+# See https://calomel.org/network_performance.html
+ip route show | while read L
+do
+    if [ -z "\$(grep init[cr]wnd <<< \$L)" ]
+    then
+        ip route change \$L initcwnd 128 initrwnd 128
+    fi
+done
+                    
 #-------------------------------------------------------------------------
 # Set readahead for disks
 # See http://linuxmantra.com/2013/11/disk-read-ahead-in-linux.html
