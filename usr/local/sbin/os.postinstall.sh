@@ -522,10 +522,10 @@ EOSC
 
 #- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Tune the network stack for performance
-if [ -f /lib/modules/\$(uname -r)/kernel/net/ipv4/tcp_htpc.ko ]
+if [ -f /lib/modules/\$(uname -r)/kernel/net/ipv4/tcp_htcp.ko ]
 then
     # See https://calomel.org/network_performance.html
-    CALG=htpc
+    CALG=htcp
 elif [ -f /lib/modules/\$(uname -r)/kernel/net/ipv4/tcp_cubic.ko ]
 then
     # See http://datatag.web.cern.ch/datatag/howto/tcp.html
