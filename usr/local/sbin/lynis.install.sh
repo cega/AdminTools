@@ -48,7 +48,9 @@ rm -rf lynis*
 
 echo "Downloading newest version from '$URL'"
 wget $DEBUG "$URL"
-tar $DEBUG -xzf lynis*
+TARDEBUG="$DEBUG"
+[ "T$DEBUG" = 'T-q' ] && TARDEBUG=''
+tar $TARDEBUG -xzf lynis*
 cd lynis
 
 echo 'Installing/updating lynis'
