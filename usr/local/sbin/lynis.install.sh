@@ -67,6 +67,7 @@ cat default.prf > /usr/local/etc/lynis/default.prf
 for MS in {1..9}
 do
     [ -s lynis.$MS ] || continue
+    mkdir -p /usr/local/man/man${MS}
     cat lynis.$MS > /usr/local/man/man${MS}/lynis.$MS
 done
 
