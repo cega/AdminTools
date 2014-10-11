@@ -39,9 +39,8 @@ echo "$$" > $LOCKFILE
 DEBUG='-q'
 [[ $- = *x* ]] && DEBUG='-v'
 
-trap "rm -f /tmp/$$*" EXIT
-
 echo 'Determine newest version'
+#NEWEST=$(host -t txt -W 3 lynis-lv.rootkit.nl | awk '{gsub(/"/,"");print $NF}')
 wget $DEBUG 'http://cisofy.com/downloads/' -O /tmp/$$
 URL='http://cisofy.com'$(grep 'tar\.gz' /tmp/$$ | sed -e 's/^.*href="//;s/\.gz.*//').gz
 cd /usr/local/src
