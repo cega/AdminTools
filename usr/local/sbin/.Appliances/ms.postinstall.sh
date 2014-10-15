@@ -651,6 +651,10 @@ ssl_cert = </etc/ssl/certs/dovecot.pem
 # Preferred permissions: root:root 0400
 ssl_key = </etc/ssl/private/dovecot.pem
 
+# Only allow TLSv1 and above
+ssl_cipher_list = HIGH:MEDIUM:+TLSv1:!SSLv2:!SSLv3
+ssl_protocols = !SSLv2
+
 # More connections per user+IP
 mail_max_userip_connections = 25
 
