@@ -101,11 +101,15 @@ then
                 echo '==> WARNINGS <=='
                 awk -F\| '/^warning/ {$1="";print}' /var/log/lynis-report.dat
             fi
-            if [ $(grep -c '^suggestion' /var/log/lynis-report.dat) -ne 0 ]
-            then
-                echo '==> Suggestions <=='
-                awk -F\| '/^suggestion/ {$1="";print}' /var/log/lynis-report.dat
-            fi
+            SUGGESTIONS=$(grep -c '^suggestion' /var/log/lynis-report.dat)
+            cat << EOT
+==> Other data <==
+ $SUGGESTIONS suggestion(s) found - for a list please issue this command:
+ awk -F\| '/^suggestion/ {\$1="";print}' /var/log/lynis-report.dat
+
+ For the full report, please issue this command:
+ sed -e 's/|//' /var/log/lynis-report.dat
+EOT
         fi
     else
         echo "'lynis' didn't run successfully"
