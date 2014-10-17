@@ -1,31 +1,4 @@
 #!/bin/bash
-################################################################
-# (c) Copyright 2013 B-LUC Consulting and Thomas Bullinger
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-################################################################
-
-##########
-# Email flows:
-# Incoming port            Component  Checks performed  Outgoing port
-# *:25 (smtpd)             postfix    ppolicyd, rbl     127.0.0.1:11125 (lmtp)
-# *:465 (smtpd[s])         postfix    ppolicyd, rbl     127.0.0.1:11125 (lmtp)
-#(optional) 127.0.0.1:11124 (lmtpd)  dspam      antispam          127.0.0.1:10025 (smtp)
-# 127.0.0.1:10025 (smtpd)  amavisd    antivirus         127.0.0.1:10026 (smtp)
-# 127.0.0.1:10026 (smtpd)  postfix                      *:25 (smtp)
-# *:587 (submission)       postfix                      *.25 (smtp)
-# Note: 465 and 587 are not allowed from outside LAN
-#       465 requires authentication
 
 ##########
 # NETWORK parameters
@@ -66,7 +39,7 @@ for F in $(grep -l loadplugin.*DCC /etc/spamassassin/*)
 do
     perl -p -i -e 's/#(loadplugin.*DCC)/$1/' $F
 done
-# This is done later in the script anyway
+# This done later in the script anyway
 # service amavis restart
 
 ##########
@@ -87,37 +60,20 @@ vi /etc/default/ppolicyd
 ##########
 apt-get install postfix-pcre
 
-# Get the IP address of the "real" mail server
-MSHOST=''
-while [ -z "$MSHOST" ]
-do
-    read -p 'IP address of the "real" mail server ? ' MSHOST
-done
-
-# Get the email domain we relay for
-read -p "Domain we need to relay for [default=$LOCALDOMAIN] ? " I
-if [ -z "$I" ]
-then
-    MDOMAIN=$LOCALDOMAIN
-else
-    MDOMAIN="$I" 
-fi
-
 # Ensure we use the correct postfix config_directory
 PF_CD=$(postconf -h config_directory)
 
 # Setup postfix transport table (recipient based routing)
 postconf -e 'transport_maps = hash:'$PF_CD/transport
-
 if [ ! -s $PF_CD/transport ]
 then
     cat << EOT > $PF_CD/transport
-# Recipient based routing
-$MDOMAIN	smtp:[$MSHOST]
-.$MDOMAIN	smtp:[$MSHOST]
+btoy1.net	smtp:[192.168.1.29]
+.btoy1.net	smtp:[192.168.1.29]
+btoy1.rochester.ny.us	smtp:[192.168.1.29]
+.btoy1.rochester.ny.us	smtp:[192.168.1.29]
 EOT
 fi
-vi $PF_CD/transport
 postmap $PF_CD/transport
 
 # Setup sender-based email routing
@@ -131,6 +87,7 @@ MAXMSGSIZE=$(postconf -h message_size_limit)
 QUEUE_MINFREE=$((2 * $MAXMSGSIZE))
 postconf -e 'message_size_limit = '$MAXMSGSIZE
 postconf -e 'queue_minfree = '$QUEUE_MINFREE
+postconf -e 'local_transport = error:no local mail delivery'
 
 # We are a relay
 postconf -e 'mydestination = '
@@ -145,8 +102,10 @@ postconf -e 'relay_domains = hash:'$PF_CD/relays
 if [ ! -s $PF_CD/relays ]
 then
     cat << EOT > $PF_CD/relays
-$MDOMAIN	OK
-.$MDOMAIN	OK
+btoy1.net	OK
+.btoy1.net	OK
+btoy1.rochester.ny.us	OK
+.btoy1.rochester.ny.us	OK
 EOT
 fi
 postmap $PF_CD/relays
@@ -156,7 +115,8 @@ postconf -e 'relay_recipient_maps = hash:'$PF_CD/relay_recipients
 if [ ! -s $PF_CD/relay_recipients ]
 then
     cat << EOT > $PF_CD/relay_recipients
-@$MDOMAIN	OK
+@btoy1.net	OK
+@btoy1.rochester.ny.us	OK
 EOT
 fi
 postmap $PF_CD/relay_recipients
@@ -243,7 +203,8 @@ postmap $PF_CD/mx_access
 if [ ! -s $PF_CD/sender_access ]
 then
     cat << EOT > $PF_CD/sender_access
-$MDOMAIN	OK
+btoy1.net	OK
+btoy1.rochester.ny.us	OK
 EOT
 fi
 postmap $PF_CD/sender_access
@@ -377,7 +338,7 @@ postconf -e 'bounce_queue_lifetime = 3h'
 postconf -e 'bounce_size_limit = 512'
 postconf -e 'minimal_backoff_time = 6m'
 postconf -e 'maximal_backoff_time = 60m'
-postconf -e "smtpd_banner = mx.$MDOMAIN ESMTP UCE"
+postconf -e 'smtpd_banner = mx.btoy1.net ESMTP UCE'
 postconf -e 'biff = no'
 postconf -e 'address_verify_negative_refresh_time = 60m'
 
@@ -448,7 +409,7 @@ if [ ! -s $PF_CD/smtp_tls_per_site ]
 then
     cat << EOT > $PF_CD/smtp_tls_per_site
 # See: http://www.postfix.org/TLS_README.html
-$MSHOST	none
+192.168.1.29	none
 EOT
 fi
 postmap $PF_CD/smtp_tls_per_site
@@ -487,7 +448,7 @@ chmod 700 /usr/local/sbin/SyncLEA.sh
 cat << EOT > /etc/cron.d/les
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/sbin:/sbin:/usr/local/bin:/usr/bin:/bin
-MAILTO=root
+MAILTO=rootmail@btoy1.rochester.ny.us
 ##############################################################################
 # Synchronize list of legitimate email addresses for postfix
 */3 * * * *       root    [ -x /usr/local/sbin/SyncLEA.sh ] && SyncLEA.sh
@@ -498,19 +459,6 @@ EOT
 ##########
 apt-get install amavisd-new spamassassin zoo
 apt-get install libnet-dns-perl pyzor razor arj bzip2 cabextract cpio file gzip nomarch pax unzip zip
-if [ -s /etc/lsb-release ]
-then
-    source /etc/lsb-release
-    cat << EOT > /etc/apt/preferences.d/clamav
-Package: clamav*
-Pin: release a=${DISTRIB_CODENAME}-backports
-Pin-Priority: 500  
-
-Package: libclamav6
-Pin: release a=${DISTRIB_CODENAME}-backports
-Pin-Priority: 500  
-EOT
-fi
 apt-get install clamav-daemon clamav-freshclam clamav-unofficial-sigs
 freshclam -v
 service clamav-daemon restart
@@ -547,8 +495,8 @@ use strict;
 # Be less verbose with the added header line
 \$X_HEADER_LINE = "\$mydomain";
 
-#@whitelist_sender_acl = qw( '$MDOMAIN' );
-@local_domains_maps = qw( '$MDOMAIN' );
+#@whitelist_sender_acl = qw( 'btoy1.net', 'btoy1.rochester.ny.us' );
+@local_domains_maps = qw( 'btoy1.net', 'btoy1.rochester.ny.us' );
 
 # Where to send checked mail to
 \$forward_method = 'smtp:[127.0.0.1]:10025';
@@ -564,21 +512,22 @@ use strict;
 
 # How spam is reported
 \$sa_spam_level_char    = 'S';
-\$sa_spam_report_header = 1;
+\$allowed_added_header_fields{lc('X-Spam-Report')} = 1;
+#\$sa_spam_report_header = 1;
 \$sa_spam_modifies_subj = 1;
 \$sa_spam_subject_tag = 'SPAM: ';
 
 # Quarantine spams (sa_kill_level_deflt)
 \$final_spam_destiny = D_DISCARD;  # (defaults to D_REJECT)
-\$spam_quarantine_to = 'postmaster@$MDOMAIN';
-\$hdrfrom_notify_sender = 'postmaster@$MDOMAIN';
+\$spam_quarantine_to = 'postmaster@btoy1.net';
+\$hdrfrom_notify_sender = 'postmaster@btoy1.net';
 
 # See http://www.mikecappella.com/logwatch/amavis-logwatch.1.htm
 # http://eric.lubow.org/wp-content/uploads/2009/05/amavis-logwatch_1.49.09-1.1_i386.deb
 \$log_level = 2;
 
 # Tell the postmaster about virii
-\$virus_admin = 'postmaster@$MDOMAIN';
+\$virus_admin = 'postmaster@btoy1.net';
 
 # Defang any intercepted and labeled emails
 \$defang_virus = 1;
@@ -586,6 +535,9 @@ use strict;
 \$defang_spam = 1;
 \$defang_bad_header = 1;
 \$defang_undecipherable = 1;
+
+# Local whitelist
+@whitelist_sender_maps = read_hash('/var/tmp/whitelist_sender_maps'),
 
 #------------ Do not modify anything below this line -------------
 1;  # ensure a defined return
