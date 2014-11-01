@@ -1167,8 +1167,10 @@ sub ReportHourly()
                     ) * 8;
                 } else
                 {
-                    $Speed = ( ( $RXbytes - $RXPrevBytes_Hourly{"$IFName"} )
-                        / ( $VMLNo_Hourly - 3 ) ) * 8;
+                    $Speed
+                        = (
+                        ( $RXbytes - $RXPrevBytes_Hourly{"$IFName"} ) / 3600 )
+                        * 8;
                 } ## end else [ if ( $RXPrevBytes_Hourly...)]
                 $Report = sprintf "HOURLY: Receive speed for %s = %s bits/s ",
                     $IFName, commify( sprintf "%.2f", $Speed );
@@ -1247,8 +1249,10 @@ sub ReportHourly()
                     ) * 8;
                 } else
                 {
-                    $Speed = ( ( $TXbytes - $TXPrevBytes_Hourly{"$IFName"} )
-                        / ( $VMLNo_Hourly - 3 ) ) * 8;
+                    $Speed
+                        = (
+                        ( $TXbytes - $TXPrevBytes_Hourly{"$IFName"} ) / 3600 )
+                        * 8;
                 } ## end else [ if ( $TXPrevBytes_Hourly...)]
                 $Report
                     = sprintf "HOURLY: Transmit speed for %s = %s bits/s ",
@@ -1323,7 +1327,7 @@ sub ReportHourly()
                 } else
                 {
                     $Speed = ( $DiskReads - $ReadBytes_Hourly{"$DiskPart"} )
-                        / ( $VMLNo_Hourly - 3 );
+                        / 3600;
                 } ## end else [ if ( $ReadBytes_Hourly...)]
                 $Report
                     = sprintf "HOURLY: Disk read speed for %s = %s bytes/s ",
@@ -1357,7 +1361,7 @@ sub ReportHourly()
                 } else
                 {
                     $Speed = ( $DiskWrites - $WriteBytes_Hourly{"$DiskPart"} )
-                        / ( $VMLNo_Hourly - 3 );
+                        / 3600;
                 } ## end else [ if ( $WriteBytes_Hourly...)]
                 $Report
                     = sprintf "HOURLY: Disk write speed for %s = %s bytes/s ",
@@ -1618,8 +1622,10 @@ sub ReportDaily()
                     ) * 8;
                 } else
                 {
-                    $Speed = ( ( $RXbytes - $RXPrevBytes_Daily{"$IFName"} )
-                        / ( $VMLNo_Daily - 3 ) ) * 8;
+                    $Speed
+                        = (
+                        ( $RXbytes - $RXPrevBytes_Daily{"$IFName"} ) / 86400 )
+                        * 8;
                 } ## end else [ if ( $RXPrevBytes_Daily...)]
                 $Report = sprintf "DAILY: Receive speed for %s = %s bits/s ",
                     $IFName, commify( sprintf "%.2f", $Speed );
@@ -1698,8 +1704,10 @@ sub ReportDaily()
                     ) * 8;
                 } else
                 {
-                    $Speed = ( ( $TXbytes - $TXPrevBytes_Daily{"$IFName"} )
-                        / ( $VMLNo_Daily - 3 ) ) * 8;
+                    $Speed
+                        = (
+                        ( $TXbytes - $TXPrevBytes_Daily{"$IFName"} ) / 86400 )
+                        * 8;
                 } ## end else [ if ( $TXPrevBytes_Daily...)]
                 $Report = sprintf "DAILY: Transmit speed for %s = %s bits/s ",
                     $IFName, commify( sprintf "%.2f", $Speed );
@@ -1773,7 +1781,7 @@ sub ReportDaily()
                 } else
                 {
                     $Speed = ( $DiskReads - $ReadBytes_Daily{"$DiskPart"} )
-                        / ( $VMLNo_Daily - 3 );
+                        / 86400;
                 } ## end else [ if ( $ReadBytes_Daily{...})]
                 $Report
                     = sprintf "DAILY: Disk read speed for %s = %s bytes/s ",
@@ -1806,7 +1814,7 @@ sub ReportDaily()
                 } else
                 {
                     $Speed = ( $DiskWrites - $WriteBytes_Daily{"$DiskPart"} )
-                        / ( $VMLNo_Daily - 3 );
+                        / 86400;
                 } ## end else [ if ( $WriteBytes_Daily...)]
                 $Report
                     = sprintf "DAILY: Disk write speed for %s = %s bytes/s ",
