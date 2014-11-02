@@ -14,7 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 #--------------------------------------------------------------------
-require 5.008;
+use 5.0010;
 
 # Constants
 my $ProgName = '';
@@ -23,9 +23,6 @@ my $CopyRight = "(c) CopyRight 2014 B-LUC Consulting Thomas Bullinger";
 
 # Common sense options:
 use strict qw(vars subs);
-use feature qw(say state switch);
-use feature qw(unicode_strings unicode_eval current_sub fc evalbytes);
-no feature qw(array_base);
 no warnings;
 use warnings qw(FATAL closed threads internal debugging pack
     portable prototype inplace io pipe unpack malloc
