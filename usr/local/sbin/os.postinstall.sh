@@ -531,8 +531,8 @@ then
     # See http://datatag.web.cern.ch/datatag/howto/tcp.html
     CALG=cubic
 fi
-    modprobe tcp_\$CALG
-    cat << EOSC >> /tmp/sysctl.conf
+modprobe tcp_\$CALG
+cat << EOSC >> /tmp/sysctl.conf
 # Use modern congestion control algorithm
 net.ipv4.tcp_congestion_control = \$CALG
 
@@ -765,7 +765,54 @@ do
         [ -w \${DEV}/device/timeout ] && echo 180 > \${DEV}/device/timeout
     fi
 done
+
+#-------------------------------------------------------------------------
+# Setup security (kernel) auditing
+AC=\$(which auditctl)
+if [ ! -z "\$AC" ]
+then
+    ARCH32=\$(uname -m)
+    # See also: http://security.blogoverflow.com/tag/standards/
+    \$AC -D
+    \$AC -b 1024
+#    \$AC -a exit,always -F arch=\$ARCH32 -S unlink -S rmdir -k deletion
+#    \$AC -a exit,always -F arch=\$ARCH32 -S setrlimit -k system-limits
+
+    \$AC -a always,exit -F arch=\$ARCH32 -S adjtimex -S stime -S clock_settime -k time-change
+    \$AC -a always,exit -F arch=\$ARCH32 -S adjtimex -S settimeofday -S clock_settime -k time-change
+
+    \$AC -a always,exit -F arch=\$ARCH32 -S sethostname -S setdomainname -k system-locale
+
+    \$AC -w /etc/group -p wa -k identity
+    \$AC -w /etc/passwd -p wa -k identity
+    \$AC -w /etc/shadow -p wa -k identity
+    [ -f /etc/sudoers ] && \$AC -w /etc/sudoers -p wa -k identity
+
+#    \$AC -w /var/run/utmp -p wa -k session
+#    \$AC -w /var/log/wtmp -p wa -k session
+#    \$AC -w /var/log/btmp -p wa -k session
+
+    [ -d /etc/selinux ] && \$AC -w /etc/selinux/ -p wa -k MAC-policy
+
+    \$AC -w /tmp -p x -k suspicious-exec
+    if [ -d /var/www ]
+    then
+        \$AC -w /var/www -p wa -k suspicious-write
+        \$AC -w /var/www -p x -k suspicious-exec
+    fi
+fi
+
+#-------------------------------------------------------------------------
+# Watch system performance (adapt email address "-a")
+[ -x /usr/local/sbin/SysMon.pl ] && /usr/local/sbin/SysMon.pl -D -a root -o /var/tmp
+
+#-------------------------------------------------------------------------
+# We are done
+exit 0
 EORC
+
+# Make sure that rc.local runs in "bash"
+sed -i -e 's@bin/sh -e@bin/bash@' /etc/rc.local
 
 #--------------------------------------------------------------------
 if [ "T$LINUX_DIST" = 'TDEBIAN' ]
