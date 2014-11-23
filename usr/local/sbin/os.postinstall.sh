@@ -345,7 +345,13 @@ fi
 
 #--------------------------------------------------------------------
 # Tweak system for security and performance
-[ -z "$(grep IS_VIRTUAL /etc/rc.local)" ] && cat << EORC >> /etc/rc.local
+if [ -z "$(grep IS_VIRTUAL /etc/rc.local)" ]
+then
+    # Make sure that rc.local runs in "bash"
+    sed -i -e 's@bin/sh -e@bin/bash@;/^exit/d' /etc/rc.local
+
+    # Expand /etc/rc.local
+    cat << EORC >> /etc/rc.local
 #-------------------------------------------------------------------------
 # See: https://klaver.it/linux/sysctl.conf
 echo '# Dynamically created sysctl.conf' > /tmp/sysctl.conf
@@ -815,9 +821,8 @@ fi
 # We are done
 exit 0
 EORC
-
-# Make sure that rc.local runs in "bash"
-sed -i -e 's@bin/sh -e@bin/bash@' /etc/rc.local
+    read -p "Review/correct the '-a root' email address in /etc/rc.local" -t 30 REPLY
+fi
 
 #--------------------------------------------------------------------
 if [ "T$LINUX_DIST" = 'TDEBIAN' ]
