@@ -348,7 +348,7 @@ fi
 if [ -z "$(grep IS_VIRTUAL /etc/rc.local)" ]
 then
     # Make sure that rc.local runs in "bash"
-    sed -i -e 's@bin/sh -e@bin/bash@;s/^exit/d' /etc/rc.local
+    sed -i -e 's@bin/sh -e@bin/bash@;/^exit/d' /etc/rc.local
 
     # Expand /etc/rc.local
     cat << EORC >> /etc/rc.local
