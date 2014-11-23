@@ -21,7 +21,7 @@
 # *:25 (smtpd)             postfix                      127.0.0.1:10025 (smtp)
 # *:587 (submission)       postfix                      127.0.0.1:10025 (smtp)
 # 127.0.0.1:10025 (smtpd)  clamsmtpd  antivirus         127.0.0.1:10026 (smtp)
-# 127.0.0.1:10025 (smtp)   postfix                      *.25 (smtp)
+# 127.0.0.1:10026 (smtp)   postfix                      *.25 (smtp)
 
 ##########
 # NETWORK parameters
@@ -724,3 +724,6 @@ postconf -e 'mydomain = '$LOCALDOMAIN
 # Refresh aliases and restart postfix
 newaliases
 postfix start || service postfix restart
+
+# Some usefule tool(s)
+apt-get install swaks
