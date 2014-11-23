@@ -15,10 +15,31 @@
 #   limitations under the License.
 ################################################################
 
+#--------------------------------------------------------------------
+# Set a sensible path for executables
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+PROG=${0##*/}
 
-# This must run as "root"
-[ "T$EUID" = 'T0' ] || exit
+#--------------------------------------------------------------------
+# Ensure that only one instance is running
+LOCKFILE=/tmp/$PROG.lock
+if [ -f $LOCKFILE ]
+then
+    # The file exists so read the PID
+    MYPID=$(< $LOCKFILE)
+    [ -z "$(ps h -p $MYPID)" ] || exit 0
+fi
+
+# Make sure we remove the lock file at exit
+trap "rm -f $LOCKFILE /tmp/$$*" EXIT
+echo "$$" > $LOCKFILE            
+
+# We need to be "root" to execute this script
+if [ $EUID -ne 0 ]
+then
+    echo "You need to be 'root' to execute this script"
+    exit 1
+fi
 
 DEBUG=0
 [[ $- = *x* ]] && DEBUG=1
@@ -28,6 +49,21 @@ THISHOST=$(hostname)
 [[ $THISHOST = *.* ]] || THISHOST=$(hostname -f)
 THISDOMAIN=$(hostname -d)
 NOW="$(date -R)"
+
+FORCE=0
+while getopts hf OPTION
+do
+    case ${OPTION} in
+    h)  echo "Usage: $PROG [h|f]"
+        echo "       -f   Force update [default=simulate]"
+        echo "       -h   This help"
+        exit 0
+        ;;
+    f)  FORCE=1
+        ;;
+    esac
+done
+shift $((OPTIND - 1))
 
 #==============================================================================
 # Update the packages
@@ -39,6 +75,29 @@ then
     cat /tmp/$$
     exit 1
 fi
+
+# Remove any package via "autoremove"
+echo "$NOW: Results of 'apt-get autoremove'" > /tmp/$$
+apt-get autoremove >> /tmp/$$ 2> /dev/null
+if [ $? -ne 0 ]
+then
+    # We had a problem "autoremoving"
+    cat /tmp/$$
+    exit 1
+fi
+
+# Remove any leftover packages in "rc" state
+echo "$NOW: Results of 'dpkg -P'" > /tmp/$$
+dpkg -l | awk '/^rc/ {print $2}' | xargs -r dpkg -P  >> /tmp/$$ 2> /dev/null
+if [ $? -ne 0 ]
+then
+    # We had a problem removing leftover packages
+    cat /tmp/$$
+    exit 1
+fi
+
+# This MUST be interactive!
+[ $FORCE -ne 0 ] && apt-get dist-upgrade
 
 # Simulate a full upgrade
 apt-get -s dist-upgrade > /var/log/DistUpgradeList 2> /dev/null
