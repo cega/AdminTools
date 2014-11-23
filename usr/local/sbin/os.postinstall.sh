@@ -544,10 +544,7 @@ net.ipv4.tcp_congestion_control = \$CALG
 
 # No slowness for idle connections
 net.ipv4.tcp_slow_start_after_idle = 0
-EOSC
-fi
 
-cat << EOSC >> /tmp/sysctl.conf
 # Turn on the tcp_window_scaling
 net.ipv4.tcp_window_scaling = 1
 
