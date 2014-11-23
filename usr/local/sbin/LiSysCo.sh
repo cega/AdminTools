@@ -47,7 +47,14 @@ TH_SHORT=${THISHOST%%.*}
 # -> Can be overwritten/expanded in "filelist" (see below)
 FILELIST='/etc/firehol/firehol.conf /etc/network/interfaces
           /etc/hosts /etc/hostname /etc/rc.local
-          /etc/cron.d/* /usr/local/*'
+          /etc/cron.d/*'
+for SUB in /usr/local/*
+do
+    [[ $SUB =~ LiSysCo ]] && continue
+    FILELIST="$FILELIST $SUB"
+done
+FILELIST='/etc/firehol/firehol.conf /etc/network/interfaces
+          /etc/hosts /etc/hostname /etc/rc.local
 
 # RSYNC share to upload backup to
 # -> if empty, no upload happens
