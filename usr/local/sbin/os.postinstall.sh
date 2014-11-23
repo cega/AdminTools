@@ -642,12 +642,17 @@ fi
 sysctl -p /etc/sysctl.conf
 
 #-------------------------------------------------------------------------
-for ETH in \$(grep ':' /proc/net/dev | cut -d: -f1 | egrep -v '(lo|tap)')
+for ETH in \$(awk -F: '/eth/ {sub(/^ */,"");print \$1}' /proc/net/dev)
 do
-    # Disable Wake-On-LAN
+    # Disable Wake-On-LAN for Ethernet interface
+    # (this might show errors with some Ethernet drivers)
     ethtool -s \$ETH wol d
-    # Increase the TX queue length
-    # See http://datatag.web.cern.ch/datatag/howto/tcp.html
+
+    # As per https://wiki.gentoo.org/wiki/Traffic_shaping
+    # (this might show errors with some Ethernet drivers)
+    ethtool -K \$ETH tso off gso off gro off
+
+    # Increase the TX queue length:
     ifconfig \$ETH txqueuelen 2048
 done
 
