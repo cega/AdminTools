@@ -231,6 +231,7 @@ DatabaseMirror db.local.clamav.net
 DatabaseMirror database.clamav.net
 EOT
 freshclam -v
+service clamsmtp restart
 
 ##########
 # POSTFIX
