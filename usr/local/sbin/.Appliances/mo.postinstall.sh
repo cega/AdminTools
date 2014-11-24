@@ -699,13 +699,14 @@ postconf -e 'smtp_tls_policy_maps = hash:'$PF_CD/smtp_tls_per_site
 if [ ! -s $PF_CD/smtp_tls_per_site ]
 then
     cat << EOT > $PF_CD/smtp_tls_per_site
-# TLS settings for specific destinations in pcre format
+# TLS settings for specific destinations in hash format
 # Examples:
 #  user@domain  <action>
 #  domain       <action>
 #  .domain      <action>
 #  IP address   <action>  (needed when specific email routing is in place)
 #  [IP address] <action>  (needed when specific email routing is in place)
+#  [IP address]:port <action>  (needed when specific email routing is in place)
 #  where <action> is one of these:
 #  none    - no encryption, use clear text transmission
 #  may     - use encryption when possible (default) 
@@ -713,7 +714,7 @@ then
 # For details see: http://www.postfix.org/postconf.5.html#smtp_tls_policy_maps
 # Examples:
 # [192.168.25.25] none
-# [24.97.81.129] encrypt
+# [24.97.81.129]:25 encrypt
 EOT
 fi
 
