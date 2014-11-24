@@ -207,19 +207,19 @@ RELOAD=0
 # Process databases
 for DBF in \$(awk -F: '/hash:/ {print \$2}' main.cf | sed -e 's/,/ /g')
 do
-        [ -f \$DBF ] || touch \$DBF
-        [ "T\$DBF" = 'T/etc/aliases' ] && continue
-        if [ \$DBF -nt \${DBF}.db ]
-        then
-                postmap \$DBF
-                RELOAD=\$((\$RELOAD + 1))
-        fi
+    [ -f \$DBF ] || touch \$DBF
+    [ "T\$DBF" = 'T/etc/aliases' ] && continue
+    if [ \$DBF -nt \${DBF}.db ]
+    then
+        postmap \$DBF
+        RELOAD=\$((\$RELOAD + 1))
+    fi
 done
 # Process aliases
 if [ /etc/aliases -nt /etc/aliases.db ]
 then
-        postalias /etc/aliases
-        RELOAD=\$((\$RELOAD + 1))
+    postalias /etc/aliases
+    RELOAD=\$((\$RELOAD + 1))
 fi
 [ \$RELOAD -gt 0 ] && postfix reload 2> /dev/null
 # We are done
