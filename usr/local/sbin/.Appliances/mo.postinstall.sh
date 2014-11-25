@@ -264,6 +264,7 @@ submission inet n       -       -       -       -       smtpd
         -o smtpd_client_restrictions=
         -o smtpd_sender_restrictions=
         -o smtpd_recipient_restrictions=permit_mynetworks,reject
+	-o smtpd_recipient_limit=5000
         -o mynetworks_style=host
 # For checking emails against virii
 clamsmtp unix  -       -       -       -       -       smtp
