@@ -74,7 +74,7 @@ M_mynetworks() {
     [ "T${YN^^}" = 'TY' ] || return
 
     cat /tmp/$$ > $PF_CD/mynetworks
-    (cd $PF_CD; ./make; postfix reload)
+    (cd $PF_CD; ./make)
     read -p 'Press <ENTER> to continue'
 }
 
@@ -94,7 +94,7 @@ M_transport() {
     [ "T${YN^^}" = 'TY' ] || return
 
     cat /tmp/$$ > $PF_CD/transport
-    (cd $PF_CD; ./make; postfix reload)
+    (cd $PF_CD; ./make)
     read -p 'Press <ENTER> to continue'
 }
 
@@ -114,7 +114,7 @@ M_sender_mail_routing() {
     [ "T${YN^^}" = 'TY' ] || return
 
     cat /tmp/$$ > $PF_CD/sender_mail_routing
-    (cd $PF_CD; ./make; postfix reload)
+    (cd $PF_CD; ./make)
     read -p 'Press <ENTER> to continue'
 }
 
@@ -134,7 +134,21 @@ M_smtp_tls() {
     [ "T${YN^^}" = 'TY' ] || return
 
     cat /tmp/$$ > $PF_CD/smtp_tls_per_site
-    (cd $PF_CD; ./make; postfix reload)
+    (cd $PF_CD; ./make)
+    read -p 'Press <ENTER> to continue'
+}
+
+#####################################################################
+# Show active SSL certificate
+#####################################################################
+Show_SSL_cert() {
+
+    SSLCERT=$(postconf -h smtpd_tls_cert_file)
+    echo "Active certificate '$SSLCERT':" > /tmp/$$
+    echo '' >> /tmp/$$
+    openssl x509 -noout -text -in $SSLCERT | sed '1d' >> /tmp/$$
+    less /tmp/$$
+    rm -f /tmp/$$
     read -p 'Press <ENTER> to continue'
 }
 
@@ -144,7 +158,7 @@ M_smtp_tls() {
 Renew_SSL_cert() {
 
     CreateSelfSignedCert.sh
-    (cd $PF_CD; ./make; postfix reload)
+    (cd $PF_CD; ./make; postfix restart)
     read -p 'Press <ENTER> to continue'
 }
 
@@ -189,7 +203,9 @@ ExecOption() {
            ;;
     21)    M_smtp_tls
            ;;
-    22)    Renew_SSL_cert
+    22)    Show_SSL_cert
+           ;;
+    23)    Renew_SSL_cert
            ;;
     31)    M_main
            ;;
@@ -203,7 +219,20 @@ ExecOption() {
 cat << EOT > $PF_CD/make
 #!/bin/bash
 cd $PF_CD
+FORCE=0
 RELOAD=0
+while getopts f OPTION
+do
+    case \${OPTION} in
+    f)  FORCE=1
+        ;;
+    *)  echo "Usage: \$0 [options]"
+        echo "       -f  Force postfix restart"
+        exit 0
+        ;;
+    esac
+done
+shift \$((OPTIND - 1))
 # Process databases
 for DBF in \$(awk -F: '/hash:/ {print \$2}' main.cf | sed -e 's/,/ /g')
 do
@@ -221,7 +250,15 @@ then
     postalias /etc/aliases
     RELOAD=\$((\$RELOAD + 1))
 fi
-[ \$RELOAD -gt 0 ] && postfix reload 2> /dev/null
+if [ \$FORCE -ne 0 ]
+then
+    (postfix stop; sleep 2; postfix start) 2> /dev/null
+    echo "Changes take effect now"
+elif [ \$RELOAD -gt 0 ]
+then
+    postfix reload 2> /dev/null
+    echo "Changes will take effect within the next few minutes"
+fi
 # We are done
 exit 0
 EOT
@@ -241,7 +278,8 @@ do
     echo -e "   ${CYAN}12${NC} - Manage source based email routing"
     echo
     echo -e "   ${CYAN}21${NC} - Manage outbound encryption"
-    echo -e "   ${CYAN}22${NC} - Renew self-signed SSL certificate"
+    echo -e "   ${CYAN}22${NC} - Show active SSL certificate"
+    echo -e "   ${CYAN}23${NC} - Renew self-signed SSL certificate"
     echo
     echo -e "   ${CYAN}31${NC} - Manage ALL postfix settings"
     echo
