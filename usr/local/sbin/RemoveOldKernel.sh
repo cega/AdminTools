@@ -35,16 +35,26 @@ do
     echo "Kernel '$OK' status: $OKS"
     [[ $OKS = *not-installed* ]] && continue
 
-    read -p "Remove/Purge/Leave old kernel $OK [R/P/L] ?" ROK
+    read -p "Leave/remove/purge old kernel $OK [L/r/p] ?" ROK
     [ -z "$ROK" ] && continue
     if [ "T${ROK^^}" = 'TP' ]
     then
-        dpkg -P $OK
+        apt-get --purge remove ${OK}*
     elif [ "T${ROK^^}" = 'TR' ]
     then
-        dpkg -r $OK
+        apt-get remove ${OK}*
     fi
 done
+
+# Remove any old kernel headers
+# Based on http://ubuntugenius.wordpress.com/2011/01/08/ubuntu-cleanup-how-to-remove-all-unused-linux-kernel-headers-images-and-modules/
+read -p "Leave/purge old kernel header files [L/p] ?" ROK
+if [ "T${ROK^^}" = 'TP' ]
+then
+    dpkg -l 'linux-*' | \
+      sed '/^ii/!d;/'"$(uname -r | sed "s/\(.*\)-\([^0-9]\+\)/\1/")"'/d;s/^[^ ]* [^ ]* \([^ ]*\).*/\1/;/[0-9]/!d' | \
+      grep headers | xargs -r apt-get -y purge
+fi
 
 # We are done
 exit 0
