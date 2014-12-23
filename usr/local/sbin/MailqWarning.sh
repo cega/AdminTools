@@ -162,7 +162,8 @@ then
         echo "ERROR: No MX host found for '$M_RECIPIENT', please use the '-s' option"
         exit 1
     fi
-    M_SERVER="$M_RECIP_MX"
+    # Use the first (or only) host in the list
+    M_SERVER="${M_RECIP_MX%% *}"
 fi
 
 # Determine the port for mail server
