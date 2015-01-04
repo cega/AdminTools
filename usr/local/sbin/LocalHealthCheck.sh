@@ -76,12 +76,12 @@ then
         # Disable MOST of the motd updater
         cd /etc/update-motd.d
         chmod -x *
-        chmod +x 99-footer
-        [ -x /usr/bin/linux_logo ] && linux_logo -ys -L 26 > /etc/motd.tail
+        [ -s 99-footer ] && chmod +x 99-footer
+        [ -x /usr/bin/linux_logo ] && linux_logo -ys -L 27 > /etc/motd.tail
     fi
 elif [ ! -f /etc/motd.tail ]
 then
-    [ -x /usr/bin/linux_logo ] && linux_logo -ys -L 26 > /etc/motd.tail
+    [ -x /usr/bin/linux_logo ] && linux_logo -ys -L 27 > /etc/motd.tail
 fi
 
 #--------------------------------------------------------------------
