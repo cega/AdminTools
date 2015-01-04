@@ -61,9 +61,9 @@ then
     then
         mkdir -p /usr/share/xt_geoip
         cd /tmp
-        sed -i -e 's/gzip -d/gzip -fd/' \$XTP/xt_geoip_dl
-        [ -x \$XTP/xt_geoip_dl ] && \$XTP/xt_geoip_dl &> /dev/null
-        [ -x \$XTP/xt_geoip_build ] && \$XTP/xt_geoip_build -D /usr/share/xt_geoip GeoIP*.csv &> /dev/null
+        sed -i -e 's/gzip -d/gzip -fd/' $XTP/xt_geoip_dl
+        [ -x $XTP/xt_geoip_dl ] && $XTP/xt_geoip_dl &> /dev/null
+        [ -x $XTP/xt_geoip_build ] && $XTP/xt_geoip_build -D /usr/share/xt_geoip GeoIP*.csv &> /dev/null
     fi
 fi
 
