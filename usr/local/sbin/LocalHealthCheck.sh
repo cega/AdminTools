@@ -85,10 +85,61 @@ then
 fi
 
 #--------------------------------------------------------------------
-# Actions to be done all the time
+# Actions done once an hour
+if [ $MIN_NOW -eq 3 ]
+then
+    # Sync time
+    ntpdate -us 0.debian.pool.ntp.org 1.debian.pool.ntp.org 2.debian.pool.ntp.org 3.debian.pool.ntp.org
 
-# Once an hour sync time
-[ $MIN_NOW -eq 3 ] && ntpdate -us 0.debian.pool.ntp.org 1.debian.pool.ntp.org 2.debian.pool.ntp.org 3.debian.pool.ntp.org
+    # Is this a virtual guest?
+    IS_VIRTUAL=0
+    if [ ! -z "$(grep '^flags[[:space:]]*.*hypervisor' /proc/cpuinfo)" ]
+    then
+        IS_VIRTUAL=1
+    elif [ ! -z "$(grep -m1 VMware /proc/scsi/scsi)" ]
+    then
+        IS_VIRTUAL=2
+    elif [ ! -z "$(grep QEMU /proc/cpuinfo)" -a ! -z "$(grep Bochs /sys/class/dmi/id/bios_vendor)" ]
+    then
+        IS_VIRTUAL=3
+    fi
+
+    if [ $IS_VIRTUAL -ne 0 ]
+    then
+        # Disable some kernel modules at runtime
+        cat << EOT > /tmp/$$
+# See http://www.linux.com/community/forums/debian/disable-ipv6-in-debian-lenny
+blacklist ipv6
+# See http://linuxpoison.blogspot.com/2009/06/how-to-disable-loading-of-unnecessary.html
+blacklist floppy
+blacklist ppdev 
+blacklist lp    
+blacklist parport_pc
+blacklist parport   
+blacklist serio_raw 
+blacklist psmouse   
+blacklist pcspkr    
+blacklist snd_pcm   
+blacklist snd_timer 
+blacklist snd
+blacklist soundcore
+blacklist snd_page_alloc
+EOT
+        diff /etc/modprobe.d/blacklist.local /tmp/$$ &> /dev/null
+        if [ $? -ne 0 ]
+        then
+            cat /tmp/$$ > /etc/modprobe.d/blacklist.local
+            for M in $(awk '/^blacklist/ {print $NF}' /etc/modprobe.d/blacklist.local)
+            do
+                modprobe -r $M &> /dev/null
+            done
+        fi
+        rm -f /tmp/$$
+    fi
+fi
+
+#--------------------------------------------------------------------
+# Actions to be done all the time
 
 # Apply sysctl changes if not yet done
 if [ -s /etc/sysctl.d/90-bluc.conf ]
