@@ -129,11 +129,11 @@ EOT
         if [ $? -ne 0 ]
         then
             cat /tmp/$$ > /etc/modprobe.d/blacklist.local
-            for M in $(awk '/^blacklist/ {print $NF}' /etc/modprobe.d/blacklist.local)
-            do
-                modprobe -r $M &> /dev/null
-            done
         fi
+        for M in $(awk '/^blacklist/ {print $NF}' /etc/modprobe.d/blacklist.local)
+        do
+            [ -z "$(grep ^$M'[[:space:]]' /proc/modules)" ] || modprobe -r $M &> /dev/null
+        done
         rm -f /tmp/$$
     fi
 fi
