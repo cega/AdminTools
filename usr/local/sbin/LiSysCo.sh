@@ -160,7 +160,7 @@ then
     TAR_RC=1
     if [ -x /usr/bin/pbzip2 ]
     then
-        if [ $(pbzip2  -V 2>&1 | awk '/Parallel/ {sub(/v/,"",$3);gsub(/\./,"",$3);print $3}') -lt 105 ]
+        if [ $(pbzip2  -V 2>&1 | awk '/Parallel/ {sub(/v/,"",$3);gsub(/\./,"",$3);print $3}') -lt 104 ]
         then
             # Too old a version to be used with "tar --use-compress-program"
             COMP=''
