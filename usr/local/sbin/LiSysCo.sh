@@ -157,18 +157,38 @@ then
     fi
 
     # Use multi-core bzip2 if possible
+    TAR_RC=1
     if [ -x /usr/bin/pbzip2 ]
     then
-        COMP='--use-compress-program="/usr/bin/pbzip2"'
+        if [ $(pbzip2  -V 2>&1 | awk '/Parallel/ {sub(/v/,"",$3);gsub(/\./,"",$3);print $3}') -lt 105 ]
+        then
+            # Too old a version to be used with "tar --use-compress-program"
+            COMP=''
+            nice tar --create --preserve-permissions \
+                --absolute-names $TARTOTALS --ignore-failed-read \
+                --exclude=/usr/local/LiSysCo/* \
+                --file $LSC/${THISHOST}.LiSysCo.tar $FILELIST /tmp/Installed.Packages.txt
+            if [ $? -eq 0 ]
+            then
+                TAR_RC=0
+                pbzip2 $LSC/${THISHOST}.LiSysCo.tar
+            fi
+        else
+            COMP='--use-compress-program=/usr/bin/pbzip2'
+        fi
     else
         export BZIP2='-5'
         COMP='--bzip2'
     fi
-    nice tar --create --preserve-permissions $COMP \
-        --absolute-names $TARTOTALS --ignore-failed-read \
-        --exclude=/usr/local/LiSysCo/* \
-        --file $LSC/${THISHOST}.LiSysCo.tar.bz2 $FILELIST /tmp/Installed.Packages.txt
-    if [ $? -eq 0 ] 
+    if [ ! -z "$COMP" ]
+    then
+        nice tar --create --preserve-permissions $COMP \
+            --absolute-names $TARTOTALS --ignore-failed-read \
+            --exclude=/usr/local/LiSysCo/* \
+            --file $LSC/${THISHOST}.LiSysCo.tar.bz2 $FILELIST /tmp/Installed.Packages.txt
+        TAR_RC=$?
+    fi
+    if [ $TAR_RC -eq 0 ] 
     then
         LISYSCO_BACKUPS='/usr/local/LiSysCo/*'
     else
