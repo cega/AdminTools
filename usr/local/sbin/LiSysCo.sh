@@ -163,7 +163,6 @@ then
         if [ $(pbzip2  -V 2>&1 | awk '/Parallel/ {sub(/v/,"",$3);gsub(/\./,"",$3);print $3}') -lt 104 ]
         then
             # Too old a version to be used with "tar --use-compress-program"
-            COMP=''
             nice tar --create --preserve-permissions \
                 --absolute-names $TARTOTALS --ignore-failed-read \
                 --exclude=/usr/local/LiSysCo/* \
@@ -171,17 +170,22 @@ then
             if [ $? -eq 0 ]
             then
                 TAR_RC=0
-                pbzip2 $LSC/${THISHOST}.LiSysCo.tar
+                nice pbzip2 $LSC/${THISHOST}.LiSysCo.tar
             fi
+            # Archiving and compressing already done
+            COMP=''
         else
+            # Archive with 'tar' and compress with 'pbzip2' inline
             COMP='--use-compress-program=/usr/bin/pbzip2'
         fi
     else
+        # Archive with 'tar' and compress with 'bzip2' inline 
         export BZIP2='-5'
         COMP='--bzip2'
     fi
     if [ ! -z "$COMP" ]
     then
+        # Archive with tar and use chosen inline compression
         nice tar --create --preserve-permissions $COMP \
             --absolute-names $TARTOTALS --ignore-failed-read \
             --exclude=/usr/local/LiSysCo/* \
