@@ -62,6 +62,7 @@ our $opt_d = 0;
 our $opt_D = 0;
 our $opt_h = 0;
 our $opt_o = '';
+out $opt_Q = '';
 our $opt_s = 'syslog';
 
 # These are in seconds:
@@ -109,6 +110,9 @@ my %WriteBytes_Daily  = ();
 # The footer for the report
 my $ReportTail = '';
 
+# 'Quiet' hours
+my @QuietHours = ();
+
 #--------------------------------------------------------------------
 # Become a daemon process
 #--------------------------------------------------------------------
@@ -155,9 +159,25 @@ sub commify
 sub SendEmail ($)
 {
     my ($MsgText) = @_;
-    warn "DBG: Sending email '$MsgText'\n" if ($opt_d);
+
     my $Recipient = "$opt_a";
     $Recipient =~ s/@/\\@/g;
+    warn "DBG: Sending email '$MsgText' to '$Recipient'\n" if ($opt_d);
+
+    if ( scalar(@QuietHours) )
+    {
+        my ( undef, undef, $CurHour ) = localtime;
+        # See http://www.perlmonks.org/?node_id=2482
+        if ( exists { map { $_ => 1 } @QuietHours }->{$CurHour} )
+        {
+            # No email during 'quiet' hours
+            syslog 5,
+                "info %s %s Email sending supressed during quiet hour '%d'",
+                POSIX::ctime(time), $MHOST, $CurHour;
+
+            return;
+        } ## end if ( exists { map { $_...}})
+    } ## end if ( scalar(@QuietHours...))
 
     my $Try = 0;
     while ( $Try < 3 )
@@ -241,29 +261,31 @@ sub SendEmail ($)
 sub ShowUsage()
 {
 
-    print "Usage: $ProgName [options]\n"
-        . "       -a email Specify email address for alerts [default=none]\n"
-        . "       -o path  Specify path for '.csv' files [default=none]\n"
-        . "       -D       Run as daemon [default=no]\n"
-        . "       -i sec   Specify wait interval for vmstat in seconds [default=$opt_i]\n"
-        . "       -I sec   Specify reporting interval in seconds [default=$opt_I]\n"
-        . "       -s log   Log to logfile [default=$opt_s]\n"
-        . "       -h       Show this help [default=no]\n"
-        . "       -d       Show some debug info on STDERR [default=no]\n\n"
-        . "       NOTES:\n"
-        . "        Alerts are disabled unless an email is specified\n"
-        . "        Alerting requires an email listener running on the local host\n"
-        . "        Alerts are sent for any of these conditions:\n"
-        . "          CPU usage is high (error)\n"
-        . "          I/O usage is high (error)\n"
-        . "          Memory usage is high (error)\n"
-        . "          A partition usage exceeds 75% percent (error)\n"
-        . "          A partition usage exceeds 85% percent (critical)\n\n"
-        . "        '.csv' files are only written if the path is given\n"
-        . "        If the path does not exist, no '.csv' is not written\n"
-        . "        There will be individual '.csv' files for data:\n"
-        . "          CPU, I/O, Memory, Disk, Partition\n"
-        . "          MySQL (if running on the local host)\n";
+    print "Usage: $ProgName [options]\n",
+        "       -a address         Specify email address for alerts [default=none]\n",
+        "       -o path            Specify path for '.csv' files [default=none]\n",
+        "       -D                 Run as daemon [default=no]\n",
+        "       -i seconds         Specify wait interval for vmstat in seconds [default=$opt_i]\n",
+        "       -I seconds         Specify reporting interval in seconds [default=$opt_I]\n",
+        "       -s path            Log to logfile [default=$opt_s]\n",
+        "       -Q hour[,hour...]  Specifiy 'quiet' hour(s) [default=none]\n",
+        "       -h                 Show this help [default=no]\n",
+        "       -d                 Show some debug info on STDERR [default=no]\n\n",
+        "       NOTES:\n",
+        "        Alerts are disabled unless an email is specified\n",
+        "        Alerts are not sent during 'quiet' hours\n",
+        "        Alerting requires an email listener running on the local host\n",
+        "        Alerts are sent for any of these conditions:\n",
+        "          CPU usage is high (error)\n",
+        "          I/O usage is high (error)\n",
+        "          Memory usage is high (error)\n",
+        "          A partition usage exceeds 75% percent (error)\n",
+        "          A partition usage exceeds 85% percent (critical)\n\n",
+        "        '.csv' files are only written if the path is given\n",
+        "        If the path does not exist, no '.csv' is not written\n",
+        "        There will be individual '.csv' files for data:\n",
+        "          CPU, I/O, Memory, Disk, Partition\n",
+        "          MySQL (if running on the local host)\n";
 
     exit 0;
 } ## end sub ShowUsage
@@ -1865,8 +1887,21 @@ $|++;
 print "$ProgName\n$CopyRight\n\n";
 
 # Get possible options
-getopts('a:dhi:Ds:o:I:') or ShowUsage();
+getopts('a:dhi:Ds:o:I:Q:') or ShowUsage();
 ShowUsage() if ( ($opt_h) or ( $opt_i <= 0 ) );
+
+if ($opt_Q)
+{
+    # Check validity of 'quiet' hours
+    if ( $opt_Q =~ /^[\d,]+/o )
+    {
+        @QuietHours = split( /,/, $opt_Q );
+    } else
+    {
+        warn
+            "'$opt_Q' does not contain valid hours - 'quiet' hours disabled!\n";
+    } ## end else [ if ( $opt_Q =~ /^[\d,]+/o...)]
+} ## end if ($opt_Q)
 
 if ($opt_a)
 {
