@@ -62,7 +62,7 @@ our $opt_d = 0;
 our $opt_D = 0;
 our $opt_h = 0;
 our $opt_o = '';
-out $opt_Q = '';
+our $opt_Q = '';
 our $opt_s = 'syslog';
 
 # These are in seconds:
