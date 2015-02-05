@@ -20,7 +20,7 @@ echo "$$" > $LOCKFILE
 
 #--------------------------------------------------------------------
 # Specifying "-x" to the bash invocation = DEBUG
-DEBUG=''
+DEBUG='-q'
 [[ $- = *x* ]] && DEBUG='-v'
 
 #--------------------------------------------------------------------
@@ -559,14 +559,17 @@ EOT
 fi
 
 #--------------------------------------------------------------------
-# Setup a "zap" account (with a simple password for now)
+# Setup a "zap" account
 if [ -z "$(getent passwd zap)" ]
 then
     useradd -s /bin/bash -c 'ZAP Daemon' -m zap
-    echo 'zap:zap' | chpasswd
-    # Unlock the account and force a password change at next login
+    Z_PASSWD=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c${1:-16})
+    # For testing set password to "zap" (or similar)
+    echo "Setting password for 'zap' account to '$Z_PASSWD'"
+    read -p "Press enter to continue" YN
+    echo "zap:$Z_PASSWD" | chpasswd
+    # Unlock the account
     passwd -u zap
-    chage -d 0 zap
 fi
 
 #--------------------------------------------------------------------
