@@ -144,6 +144,25 @@ then
     $INSTALL_PROG dist-upgrade
 fi
 
+# Change the default "index.html" file
+if [ -z "$(grep B-LUC /var/www/html/index.html)" ]
+then
+    cat << EOT > /var/www/html/index.html
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome</title>
+ <meta name="copyright" content="B-LUC Consulting">
+ <meta http-equiv="refresh" content="2;url=owncloud/">
+</head>
+<body>
+ You will be redirected to the ownCloud server in two seconds. If
+ you aren't forwarded to the it, please click <a href=owncloud/> here </a>.
+</body>
+</html>
+EOT
+fi
+
 # Enhance the web server security
 cat << EOT > /etc/apache2/conf-enabled/security2.conf
 ServerTokens Prod
