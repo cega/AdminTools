@@ -66,32 +66,30 @@ done
 shift $((OPTIND - 1))
 
 #==============================================================================
-# Update the packages
-echo "$NOW: Results of 'apt-get update'" > /tmp/$$
-apt-get update >> /tmp/$$ 2> /dev/null
-if [ $? -ne 0 ]
-then
-    # We had a problem updating
-    cat /tmp/$$
-    exit 1
-fi
-
-# Remove any package via "autoremove"
-echo "$NOW: Results of 'apt-get autoremove'" > /tmp/$$
-apt-get autoremove >> /tmp/$$ 2> /dev/null
-if [ $? -ne 0 ]
-then
-    # We had a problem "autoremoving"
-    cat /tmp/$$
-    exit 1
-fi
-
 # Remove any leftover packages in "rc" state
 echo "$NOW: Results of 'dpkg -P'" > /tmp/$$
 dpkg -l | awk '/^rc/ {print $2}' | xargs -r dpkg -P  >> /tmp/$$ 2> /dev/null
 if [ $? -ne 0 ]
 then
     # We had a problem removing leftover packages
+    cat /tmp/$$
+fi
+
+# Update the packages
+echo "$NOW: Results of 'apt-get update'" >> /tmp/$$
+apt-get update >> /tmp/$$ 2> /dev/null
+if [ $? -ne 0 ]
+then
+    # We had a problem updating
+    cat /tmp/$$
+fi
+
+# Remove any package via "autoremove"
+echo "$NOW: Results of 'apt-get autoremove'" >> /tmp/$$
+apt-get autoremove >> /tmp/$$ 2> /dev/null
+if [ $? -ne 0 ]
+then
+    # We had a problem "autoremoving"
     cat /tmp/$$
     exit 1
 fi
