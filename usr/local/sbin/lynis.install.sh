@@ -42,7 +42,7 @@ DEBUG='-q'
 echo 'Determine newest version'
 #NEWEST=$(host -t txt -W 3 lynis-lv.rootkit.nl | awk '{gsub(/"/,"");print $NF}')
 wget $DEBUG 'http://cisofy.com/download/lynis/' -O /tmp/$$
-URL='http://cisofy.com'$(grep 'tar\.gz' /tmp/$$ | sed -e 's/^.*href="//;s/\.gz.*//').gz
+URL=$(grep -m 1 'tar\.gz' /tmp/$$ | sed -e 's/^.*href="//;s/\.gz.*//').gz
 cd /usr/local/src
 rm -rf lynis*
 
