@@ -69,45 +69,39 @@ shift $((OPTIND - 1))
 # Remove any leftover packages in "rc" state
 echo "$NOW: Results of 'dpkg -P'" > /tmp/$$
 dpkg -l | awk '/^rc/ {print $2}' | xargs -r dpkg -P  >> /tmp/$$ 2> /dev/null
-if [ $? -ne 0 ]
-then
-    # We had a problem removing leftover packages
-    cat /tmp/$$
-fi
+echo >> /tmp/$$
+
+# Clean up downloaded packages
+echo "$NOW: Results of 'apt-get clean'" >> /tmp/$$
+apt-get clean >> /tmp/$$ 2> /dev/null
+echo >> /tmp/$$
 
 # Update the packages
 echo "$NOW: Results of 'apt-get update'" >> /tmp/$$
 apt-get update >> /tmp/$$ 2> /dev/null
-if [ $? -ne 0 ]
-then
-    # We had a problem updating
-    cat /tmp/$$
-fi
+echo >> /tmp/$$
 
 # Remove any package via "autoremove"
 echo "$NOW: Results of 'apt-get autoremove'" >> /tmp/$$
 apt-get autoremove >> /tmp/$$ 2> /dev/null
-if [ $? -ne 0 ]
-then
-    # We had a problem "autoremoving"
-    cat /tmp/$$
-    exit 1
-fi
+echo >> /tmp/$$
 
 # This MUST be interactive!
 [ $FORCE -ne 0 ] && apt-get dist-upgrade
 
 # Simulate a full upgrade
-apt-get -s dist-upgrade > /var/log/DistUpgradeList 2> /dev/null
+echo "$NOW: Results of 'apt-get -s dist-upgrade'" >> /tmp/$$
+apt-get -s dist-upgrade > /var/log/DistUpgradeList >> /tmp/$$ 2> /dev/null
 if [ $? -ne 0 ]
 then
     # We had a problem updating
-    echo 'Could not create a list of package that need to be updated'
+    cat /tmp/$$
     exit 1
 fi
 
 # Extract the list of upgraded and new packages
 NUP=$(awk '/upgraded, .* newly/ {print $1+$3}' /var/log/DistUpgradeList)
+[ -z "$NUP" ] && NUP=0
 if [ $NUP -gt 25 ]
 then
     # New and upgraded packages exceed a combined 25
