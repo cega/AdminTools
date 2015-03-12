@@ -667,12 +667,12 @@ do
 done
 
 # Increase initial window for TCP on ALL routes
-# See https://calomel.org/network_performance.html
-ip route show | while read L
+# See http://www.cablelabs.com/wp-content/uploads/2014/05/Analysis_of_Google_SPDY_TCP.pdf
+ip route show | grep eth | while read L
 do
-    if [ -z "\$(grep init[cr]wnd <<< \$L)" ]
+    if [[ ! \$L =~ init.wnd ]]
     then
-        ip route change \$L initcwnd 128 initrwnd 128
+        ip route change \$L initcwnd 10 initrwnd 10
     fi
 done
                     
