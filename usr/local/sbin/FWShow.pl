@@ -168,9 +168,10 @@ sub ShowSubChainRules($$$$)
         } elsif ( $Rule =~ /^\S+\s+\S+\s+(\S+)/o )
         {
             # Goto another chain
-            my $SubChain = "$1";
+            my $newSubChain = "$1";
             warn "DEBUG: SubChain = $SubChain\n" if ($opt_d);
-            ShowSubChainRules( $Table, $Chain, $SubChain, $local_indent );
+            print "$Table::$Chain::$SubChain ", BeautifyRule($Rule), "\n";
+            ShowSubChainRules( $Table, $Chain, $newSubChain, $local_indent );
         } else
         {
             # Unknown rule format
