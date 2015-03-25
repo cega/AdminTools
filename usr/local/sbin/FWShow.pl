@@ -122,14 +122,19 @@ sub BeautifyRule($)
     # The protocol
     $Ruleparts[3] = "prot:$Ruleparts[3]";
     # The options
+    $Ruleparts[4] =~ s/--/none/;
     $Ruleparts[4] = "opt:$Ruleparts[4]";
     # The "in" interface
+    $Ruleparts[5] =~ s/^\*$/any/;
     $Ruleparts[5] = "in:$Ruleparts[5]";
     # The "out" interface
+    $Ruleparts[6] =~ s/^\*$/any/;
     $Ruleparts[6] = "out:$Ruleparts[6]";
     # The source
+    $Ruleparts[7] =~ s/^0.0.0.0\/0$/any/;
     $Ruleparts[7] = "from:$Ruleparts[7]";
     # The destination
+    $Ruleparts[8] =~ s/^0.0.0.0\/0$/any/;
     $Ruleparts[8] = "to:$Ruleparts[8]";
     # The parameters
     my $newRule = join( ' ', @Ruleparts );
@@ -203,7 +208,7 @@ sub ShowRules($)
                 # Goto another chain
                 my $SubChain = "$1";
                 warn "DEBUG: SubChain = $SubChain\n" if ($opt_d);
-                print "$Table::$Chain: $SubChain $2\n";
+                print "$Table::$Chain: ", BeautifyRule($Rule), "\n";
                 ShowSubChainRules( $Table, $Chain, $SubChain, $indent );
             } else
             {
