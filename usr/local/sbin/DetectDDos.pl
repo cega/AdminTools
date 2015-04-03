@@ -56,10 +56,6 @@ unless ( $MHOST =~ /\./ )
     } ## end if ( open( HOSTNAME, '-|'...))
 } ## end unless ( $MHOST =~ /\./ )
 
-# The list of addresses found in the netstat output(s)
-my %DOS_Address = ();
-my %SYN_Address = ();
-
 # Program options
 our $opt_D = 0;
 our $opt_d = 0;
@@ -129,6 +125,10 @@ while (1)
 {
     # Record the start time
     my $StartTime = time();
+
+    # The list of addresses found in the netstat output(s)
+    my %DOS_Address = ();
+    my %SYN_Address = ();
 
     # Look for possible overall and SYN DOS attacks
     open( NS, "-|", "netstat -an --ip" )
