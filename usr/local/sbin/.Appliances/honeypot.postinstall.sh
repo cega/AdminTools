@@ -1,4 +1,19 @@
 #!/bin/bash
+################################################################
+# (c) Copyright 2015 B-LUC Consulting and Thomas Bullinger
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+################################################################
 
 # Set a sensible path for executables
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
@@ -16,7 +31,7 @@ fi
 
 # Make sure we remove the lock file at exit
 trap "rm -f $LOCKFILE /tmp/$$*" EXIT
-echo "$$" > $LOCKFILE            
+echo "$$" > $LOCKFILE
 
 #--------------------------------------------------------------------
 # Specifying "-x" to the bash invocation = DEBUG
@@ -59,17 +74,10 @@ then
 fi
 rm -f /tmp/$$.fstab
 
-# Remove the PPP packages
-for P in ppp pppconfig pppoeconf
-do
-    $PKG_QUERY $P &> /dev/null
-    [ $? -eq 0 ] && $PKG_REMOVE $P
-done
-
 # Install specific packages
 if [ "T$LINUX_DIST" = 'TDEBIAN' ]
 then
-    PKG_LIST='firehol joe ethtool auditd'
+    PKG_LIST='firehol joe ethtool auditd unzip git'
 else
     PKG_LIST='wget tcpdump system-config-firewall-tui'
 
@@ -81,7 +89,7 @@ else
 
         # Get "rpmforge" repository and install it
         curl -L 'http://pkgs.repoforge.org/rpmforge-release/rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm' \
-            > /tmp/rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm   
+            > /tmp/rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm
         rpm --import http://apt.sw.be/RPM-GPG-KEY.dag.txt
         $PKG_INSTALL install /tmp/rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm
     fi
@@ -97,35 +105,6 @@ done
 [ -z "$(grep '^PermitRootLogin no' /etc/ssh/sshd_config)" ] && echo 'PermitRootLogin no' >> /etc/ssh/sshd_config
 sed -ie 's/^[[:space:]]*Protocol.*/Protocol 2/' /etc/ssh/ssh_config
 [ -z "$(grep '^[[:space:]]*Ciphers.*blowfish' /etc/ssh/ssh_config)" ] && echo 'Ciphers blowfish-cbc,aes256-cbc,aes192-cbc,aes128-cbc,3des-cbc,cast128-cbc,arcfour' >> /etc/ssh/ssh_config
-if [ "T$LINUX_DIST" = 'TDEBIAN' ]
-then
-    if [ ! -s /etc/apt/sources.list.d/w-rouesnel-openssh-hpn-precise.list ]
-    then
-        # Activate the HPN patched SSH
-        apt-add-repository ppa:w-rouesnel/openssh-hpn
-
-        # Update and upgrade
-        $PKG_UPGRADE
-    fi
-
-    if [ -z "$(grep '^TcpRcvBufPoll no' /etc/ssh/ssh_config)" ]
-    then
-        cat << EOT  >> /etc/ssh/ssh_config
-# Enable large file transfers
-TcpRcvBufPoll no
-EOT
-    fi
-    if [ -z "$(grep '^TcpRcvBufPoll no' /etc/ssh/sshd_config)" ]
-    then
-        cat << EOT  >> /etc/ssh/sshd_config
-# Enable large file transfers
-TcpRcvBufPoll no
-EOT
-    fi
-else
-    # Update and upgrade
-    $PKG_UPGRADE
-fi
 
 # Enable syslog auditing via rsyslog
 if [ -s /etc/audisp/plugins.d/syslog.conf ]
@@ -142,6 +121,9 @@ fi
 # Tweaks as per https://github.com/B-LUC/AdminTools/blob/master/etc/rc.local
 if [ -z "$(grep ETH /etc/rc.local)" ]
 then
+    # Make sure that rc.local runs in "bash"
+    sed -i -e 's@bin/sh -e@bin/bash@;/^exit/d' /etc/rc.local
+
     cat << EOT >> /etc/rc.local
 
 #-------------------------------------------------------------------------
@@ -457,414 +439,6 @@ done
 EOT
 fi
 
-if [ -z "$(grep tune2fs /etc/rc.local)" ]
-then
-    cat << EOT >> /etc/rc.local
-
-#-------------------------------------------------------------------------
-# Set readahead for disks
-SECTORS=$((32 * 512))
-# MegaRaid controller:
-if [ -x /opt/MegaRAID/MegaCli/MegaCli64 ]
-then
-    SECTORS=\$(/opt/MegaRAID/MegaCli/MegaCli64 -AdpAllInfo -aAll -NoLog | awk '/^Max Data Transfer Size/ {print \$(NF-1)}')
-fi
-if [ -e /proc/mdstat ]
-then
-    for DEV in \$(awk '/^md/ {gsub(/\\[[0-9]\]/,"");print \$1" "\$5" "\$6}' /proc/mdstat)
-    do
-        RA=\$(blockdev --getra /dev/\$DEV)
-        [ \$RA -ne \$SECTORS ] && blockdev --setra \$SECTORS /dev/\$DEV
-    done
-fi
-for DEV in \$( ls /dev/[hs]d[a-z][0-9] | awk '{sub(/\\/dev\\//,"");printf "%s ",\$1}')
-do
-    RA=\$(blockdev --getra /dev/\$DEV)
-    [ \$RA -ne \$SECTORS ] && blockdev --setra \$SECTORS /dev/\$DEV
-done
-for DEV in \$( ls /dev/mapper/* | awk '{sub(/\\/dev\/mapper\\//,"");printf "%s ",\$1}')
-do
-    [ "T\$DEV" = 'Tcontrol' ] && continue
-    RA=\$(blockdev --getra /dev/mapper/\$DEV)
-    [ \$RA -ne \$SECTORS ] && blockdev --setra \$SECTORS /dev/mapper/\$DEV
-done
-if [ -d /dev/etherd ]
-then
-    for DEV in \$(ls /dev/etherd/e[0-9].[0-9]p[0-9] | awk'{sub(/\\/dev\\/etherd\\//,"");printf "%s ",\$1}')
-    do
-        [ "T\$DEV" = 'Tcontrol' ] && continue
-        RA=\$(blockdev --getra /dev/etherd/\$DEV)
-        [ \$RA -ne \$SECTORS ] && blockdev --setra \$SECTORS /dev/etherd/\$DEV
-    done
-fi
-
-# Filesystem errors force a reboot
-for FS in \$(awk '/ext[234]/ {print \$1}' /proc/mounts)
-do
-    tune2fs -e panic -c 5 -i 1m \$FS
-done
-EOT
-fi
-
-if [ -z "$(grep IS_VIRTUAL /etc/rc.local)" ]
-then
-    cat << EOT >> /etc/rc.local
-
-#-------------------------------------------------------------------------
-# Set the correct I/O scheduler
-# Tweak the cfq scheduler
-IS_VIRTUAL=0
-if [ ! -z "\$(grep -m1 VMware /proc/scsi/scsi)" -o ! -z "\$(grep 'DMI:.*VMware' /var/log/dmesg)" ]
-then
-    IS_VIRTUAL=1
-elif [ ! -z "\$(egrep 'KVM|QEMU' /proc/cpuinfo)" -o ! -z "\$(grep Bochs /sys/class/dmi/id/bios_vendor)" ]
-then
-    IS_VIRTUAL=2
-elif [ ! -z "\$(grep '^flags[[:space:]]*.*hypervisor' /proc/cpuinfo)" ]
-then
-    IS_VIRTUAL=3
-fi
-cd /sys/block
-for DEV in [vhs]d?
-do
-    [ -w \${DEV}/queue/nr_requests ] && echo 512 > \${DEV}/queue/nr_requests
-    if [ -w \${DEV}/queue/read_ahead_kb ]
-    then
-        [ \$(< \${DEV}/queue/read_ahead_kb) -lt 2048 ] && echo 2048 > \${DEV}/queue/read_ahead_kb
-    fi
-    if [ \$IS_VIRTUAL -eq 0 ]
-    then
-        [ -w \${DEV}/queue/scheduler ] && echo cfq > \${DEV}/queue/scheduler
-        [ -w \${DEV}/device/queue_depth ] && echo 1 > \${DEV}/device/queue_depth
-        # See: http://www.nextre.it/oracledocs/ioscheduler_03.html
-        [ -w \${DEV}/queue/iosched/slice_idle ] && echo 0 > \${DEV}/queue/iosched/slice_idle
-        [ -w \${DEV}/queue/iosched/max_depth ] && echo 64 > \${DEV}/queue/iosched/max_depth
-        [ -w \${DEV}/queue/iosched/queued ] && echo 8 > \${DEV}/queue/iosched/queued
-        # See: http://www.linux-mag.com/id/7572/2
-        [ -w \${DEV}/queue/iosched/quantum ] && echo 32 > \${DEV}/queue/iosched/quantum
-        # See: http://lkml.indiana.edu/hypermail/linux/kernel/0906.3/02344.html
-        # (favors writes over reads)
-        [ -w \${DEV}/queue/iosched/slice_async ] && echo 10 > \${DEV}/queue/iosched/slice_async
-        [ -w \${DEV}/queue/iosched/slice_sync ] && echo 100 > \${DEV}/queue/iosched/slice_sync
-        # See: http://oss.oetiker.ch/rrdtool-trac/wiki/TuningRRD
-        [ -w \${DEV}/queue/nr_requests ] && echo 512 > \${DEV}/queue/nr_requests
-    else
-        # Use "noop" for VMware and KVM guests
-        [ -w \${DEV}/queue/scheduler ] && echo noop > \${DEV}/queue/scheduler
-        # As per http://kb.vmware.com/selfservice/microsites/search.do?language=en_US&cmd=displayKC&externalId=1009465
-        [ -w \${DEV}/device/timeout ] && echo 180 > \${DEV}/device/timeout
-    fi
-done
-EOT
-fi
-
-#--------------------------------------------------------------------
-# Setup a "zap" account
-if [ -z "$(getent passwd zap)" ]
-then
-    useradd -s /bin/bash -c 'ZAP Daemon' -m zap
-    Z_PASSWD=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c${1:-16})
-    # For testing set password to "zap" (or similar)
-    echo "Setting password for 'zap' account to '$Z_PASSWD'"
-    read -p "Press enter to continue" YN
-    echo "zap:$Z_PASSWD" | chpasswd
-    # Unlock the account
-    passwd -u zap
-fi
-
-#--------------------------------------------------------------------
-# Install the necessary java runtime environment
-if [ "T$LINUX_DIST" = 'TDEBIAN' ]
-then
-    if [ ! -s /etc/apt/sources.list.d/duinsoft.list ]
-    then
-        cat << EOT > /etc/apt/sources.list.d/duinsoft.list
-# See: http://www.duinsoft.nl/packages.php?t=en
-deb http://www.duinsoft.nl/pkg debs all
-EOT
-    fi
-    [ -z "$(apt-key list | grep 5CB26B26)" ] && apt-key adv --keyserver keys.gnupg.net --recv-keys 5CB26B26
-    $PKG_UPGRADE
-    $PKG_INSTALL update-sun-jre
-else
-    wget $DEBUG -o /tmp/$$.log -O /tmp/$$.html \
-      http://www.java.com/en/download/linux_manual.jsp
-    if [ $? -ne 0 ]
-    then
-        echo "Can't determine download link for ZAP"
-        cat /tmp/$$.log
-        exit 1
-    fi
-    DNLINK=$(grep -m 1 'x64 RPM' /tmp/$$.html | sed -e 's/^.*href="//;s/" onclick.*//')
-    if [ -z "$DNLINK" ]
-    then
-        echo "Can't determine download link for ZAP"
-        less /tmp/$$.html
-        exit 1
-    fi
-    wget $DEBUG -o /tmp/$$.log -O /usr/local/src/sunjre.rpm $DNLINK
-    mkdir -p /usr/java
-    cd /usr/java
-    rpm $DEBUG -Uh /usr/local/src/sunjre.rpm
-fi
-exit 0
-
-#--------------------------------------------------------------------
-# Determine the download link for the newest ZAP tarball
-wget $DEBUG -o /tmp/$$.log -O /tmp/$$.html \
-  http://sourceforge.net/projects/zaproxy/files 
-if [ $? -ne 0 ]
-then
-    echo "Can't determine download link for ZAP"
-    cat /tmp/$$.log
-    exit 1
-fi
-DNLINK=$(grep '[Tt]he latest release' /tmp/$$.html | sed -e 's/^.*href="//;s/".*//;s@/$@@')
-if [ -z "$DNLINK" ]
-then
-    echo "Can't determine download link for ZAP"
-    less /tmp/$$.html
-    exit 1
-fi
-DNLINK=${DNLINK/https/http}
-
-VERSION=${DNLINK##*/}
-# Example:
-#  http://sourceforge.net/projects/zaproxy/files/2.3.1/ZAP_2.3.1_Linux.tar.gz/download
-TARBALL="ZAP_${VERSION}_Linux.tar.gz"
-URL="$DNLINK/$TARBALL/download"
-
-# Download the newest tarball
-wget $DEBUG -o /tmp/$$.log --no-check-certificate \
-  -O /usr/local/src/$TARBALL "$URL"
-if [ $? -ne 0 ]
-then
-    echo "ZAP download failed"
-    cat /tmp/$$.log
-    exit 1
-fi
-
-# Untar it
-cd /home/zap
-tar $DEBUG -xzf /usr/local/src/$TARBALL
-chown -R zap ZAP*
-rm -f bin
-ln -s ZAP_${VERSION} bin
-chown zap bin
-
-#--------------------------------------------------------------------
-# Create the invocation script and enable it
-if [ "T$LINUX_DIST" = 'TDEBIAN' ]
-then
-    cat << EOT > /etc/init.d/zap
-#! /bin/sh
-### BEGIN INIT INFO
-# Provides:		zap
-# Required-Start:	\$remote_fs \$network \$syslog
-# Required-Stop:	\$remote_fs \$network \$syslog
-# Default-Start:	2 3 4 5
-# Default-Stop:		0 1 6
-# Short-Description:	Start zap at boot time
-# Description:		ZAP, the OWASP Zero-Attack-Proxy
-### END INIT INFO
-
-PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
-NAME=zap
-USER=zap
-DESC=ZAP
-
-test -e /home/zap/bin/zap.sh || exit 0
-test -f /lib/lsb/init-functions || exit 1
-. /lib/lsb/init-functions
-
-# Set zap options
-# 1. Run as daemon (no UI)
-# 2. Listen on Ethernet interface instead of loopback
-ZAP_OPTS='-daemon -config proxy.ip='\`ifconfig eth0 | sed -n "s/.*inet addr:\([0-9.]*\).*/\1/p"\`
-
-set -e
-
-case "\$1" in
-	start)
-		log_begin_msg "Starting \$DESC."
-		if [ -z "\`netstat  -ntap | grep '8080.*java'\`" ]
-		then
-			su - zap -c "nohup zap.sh \$ZAP_OPTS &"
-			while [ -z "\`netstat  -ntap | grep '8080.*java'\`" ]
-			do
-				echo -n '.'
-				sleep 1
-			done
-			echo ' done'
-		else
-			echo "\$DESC already running."
-		fi
-		log_end_msg 0
-		;;
-
-	stop)
-		log_begin_msg "Stopping \$DESC."
-		killall java
-		while [ ! -z "\`netstat  -ntap | grep '8080.*java'\`" ]
-		do
-			echo -n '.'
-			sleep 1
-		done
-		echo ' done'
-		log_end_msg 0
-		;;
-
-	restart)
-		set +e
-		\$0 stop
-		\$0 start
-		set -e
-		;;
-
-	status)
-		if [ -z "\`netstat  -ntap | grep '8080.*java'\`" ]
-		then
-			log_failure_msg "\$DESC daemon is NOT running"
-			exit 1
-		else
-			log_success_msg "\$DESC daemon is running."
-		fi
-		;;		
-
-	*)
-		N=/etc/init.d/\$NAME
-		echo "Usage: \$N {start|stop|restart|status}" >&2
-		exit 1
-		;;
-esac
-
-exit 0
-EOT
-else
-    cat << EOT > /etc/init.d/zap
-#!/bin/bash
-#
-# zap        Startup script for zap.
-#
-# chkconfig: 2345
-# description: ZAP is the Zero-Access-Proxy server
-### BEGIN INIT INFO
-# Provides: \$zap
-# Required-Start: \$local_fs \$network
-# Required-Stop: \$local_fs \$network
-# Default-Start:  2 3 4 5
-# Default-Stop: 0 1 6
-# Short-Description: Zero-Access_Proxy
-# Description: ZAP is the Zero-Access-Proxy server
-### END INIT INFO
-
-# Source function library.
-. /etc/init.d/functions
-
-RETVAL=0
-PIDFILE=/var/run/zap.pid
-
-prog=zap
-exec=/home/zap/bin/zap.sh
-lockfile=/var/lock/subsys/\$prog
-
-# Set zap options
-# 1. Run as daemon (no UI)
-# 2. Listen on Ethernet interface instead of loopback
-ZAP_OPTS='-daemon -config proxy.ip='\`ifconfig eth0 | sed -n "s/.*inet addr:\([0-9.]*\).*/\1/p"\`
-
-# Source config
-if [ -f /etc/sysconfig/\$prog ] ; then
-    . /etc/sysconfig/\$prog
-fi
-
-start() {
-	[ -x \$exec ] || exit 5
-
-	umask 077
-
-        echo -n "Starting ZAP: "
-	if [ -z "\`netstat  -ntap | grep '8080.*java'\`" ]
-	then
-		su - zap -c "nohup zap.sh \$ZAP_OPTS &"
-		while [ -z "\`netstat  -ntap | grep '8080.*java'\`" ]
-		do
-			echo -n '.'
-			sleep 1
-		done
-		echo ' done'
-	else
-		echo "ZAP already running."
-	fi
-        return 0
-}
-stop() {
-	echo -n "Stopping ZAP."
-	killall java
-	while [ ! -z "\`netstat  -ntap | grep '8080.*java'\`" ]
-	do
-		echo -n '.'
-		sleep 1
-	done
-	echo ' done'
-        return 0
-}
-rhstatus() {
-	if [ -z "\`netstat  -ntap | grep '8080.*java'\`" ]
-	then
-		echo "ZAP daemon is NOT running"
-		return 1
-	else
-		echo "ZAP daemon is running."
-		return 0
-	fi
-}
-restart() {
-        stop
-        start
-}
-
-case "\$1" in
-  start)
-        start
-        ;;
-  stop)
-        stop
-        ;;
-  restart)
-        restart
-        ;;
-  reload)
-        exit 3
-        ;;
-  force-reload)
-        restart
-        ;;
-  status)
-        rhstatus
-        ;;
-  condrestart|try-restart)
-        rhstatus >/dev/null 2>&1 || exit 0
-        restart
-        ;;
-  *)
-        echo "Usage: \$0 {start|stop|restart|condrestart|try-restart|reload|force-reload|status}"
-        exit 3
-esac
-
-exit \$?
-EOT
-fi
-chmod 744 /etc/init.d/zap
-if [ "T$LINUX_DIST" = 'TDEBIAN' ]
-then
-    update-rc.d zap defaults
-else
-    chkconfig --add zap
-    chkconfig zap on
-fi
-/etc/init.d/zap start
-
 #--------------------------------------------------------------------
 # Adapt the firewall
 if [ "T$LINUX_DIST" = 'TDEBIAN' ]
@@ -883,9 +457,6 @@ then
 # The TODOs bellow, are *YOUR* to-dos!
 #
 version 5
-
-# Enable port redirect 80 -> 8080
-#redirect to 8080 inface eth0 proto tcp dport 80
 
 # Fix some TOS values
 # See: http://www.docum.org/docum.org/faq/cache/49.html
@@ -920,14 +491,69 @@ interface eth0 LAN
         protection strong 10/sec 10
         protection reverse strong
         #-----------------------------------------------------------------
-        # Allow specific traffic only
-        server ssh accept
-        server custom zap tcp/8080 default accept
+        # Allow all traffic
+        server all accept
         client all accept
 EOT
 else
     lokkit -p 8080:tcp
 fi
+
+#--------------------------------------------------------------------
+# Download and install "artillery"
+wget -q https://github.com/trustedsec/artillery/archive/master.zip \
+  -O /usr/local/src/artillery.zip
+cd /tmp
+unzip -f /usr/local/src/artillery.zip
+cd artillery-master
+yes | ./setup.py
+
+# Enable automatic updates
+sed -i 's/AUTO_UPDATE="OFF"/AUTO_UPDATE="ON"/' /var/artillery/config
+
+# Ask for SMTP parameters
+read -p 'Use email notifications [Y/n] ? ' YN
+[ -z "$YN" ] && YN='Y'
+if [ "T${YN^^}" = 'TY' ]
+then
+    # SMTP_ADDRESS="smtp.gmail.com"
+    read -p 'Name or IP address of SMTP server: ' SMTP_ADDRESS
+    if [ ! -z "$SMTP_ADDRESS" ]
+    then
+        # SMTP_PORT="587"
+        read -p 'Port for SMTP traffic [25] : ' SMTP_PORT
+        [ -z "$SMTP_PORT" ] && SMTP_PORT=25
+        SMTP_FROM="Honeypot Incident"
+        read -p 'Email address of alert recipient : ' ALERT_USER_EMAIL
+        read -p 'SMTP authentication required [y/N] ? ' YN
+        if [ "T${YN^^}" = 'TY' ]
+        then
+            read -p 'Username for SMTP server : ' SMTP_USERNAME
+            read -p 'Password for SMTP server : ' SMTP_PASSWORD
+        else
+            SMTP_USERNAME=""
+            SMTP_PASSWORD=""
+        fi
+        sed -i 's/^SMTP/#SMTP/;s/^EMAIL_ALERTS=/#EMAIL_ALERTS=/;s/^ALERT_USER_EMAIL=/#ALERT_USER_EMAIL=/' /var/artillery/config
+        cat << EOT >> /var/artillery/config
+### B-LUC start
+## Email alert parameters
+EMAIL_ALERTS="ON"
+# To and From email addresses:
+ALERT_USER_EMAIL="$ALERT_USER_EMAIL"
+SMTP_FROM="$SMTP_FROM"
+# SMTP server:
+SMTP_ADDRESS="$SMTP_ADDRESS"
+SMTP_PORT="$SMTP_PORT"
+# SMTP authentication (empty if not necessary):
+SMTP_USERNAME="$SMTP_USERNAME"
+SMTP_PASSWORD="$SMTP_PASSWORD"
+### B-LUC end
+EOT
+    fi    
+fi
+
+service artillery restart
 
 #--------------------------------------------------------------------
 # We are done
