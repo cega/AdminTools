@@ -34,7 +34,7 @@ PORTSCAN=$(grep -c 'Portscan' /tmp/$$)
 GEN_ISP_REJ=$(grep -c 'IN-ISP:' /tmp/$$)
 GEN_LAN_REJ=$(grep -c 'IN-LAN:' /tmp/$$)
 GEN_DMZ_REJ=$(grep -c 'IN-DMZ:' /tmp/$$)
-GEN_REJ=$(egrep '(Rejected (TCP|UDP)|(IN|OUT)-)' /tmp/$$ | egrep -cv '\-(LAN|DMZ|ISP)')
+GEN_REJ=$(egrep '(Rejected (TCP|UDP)|(IN|OUT)-)' /tmp/$$ | egrep -cv '\-(LAN|DMZ|ISP|Portscan)')
 OTHER=$(($TOTAL - $GEO_REJ - $BLOCKED - $FLOOD - $MALFORMED - $FRAGMENTS - $NOSYN - $BANNED - $PORTSCAN - $GEN_ISP_REJ - $GEN_LAN_REJ - $GEN_DMZ_REJ - $GEN_REJ))
 
 # Nicely report the numbers
