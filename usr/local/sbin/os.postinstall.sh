@@ -71,6 +71,9 @@ if [ -s /etc/debian_version ]
 then
     LINUX_DIST='DEBIAN'
     INSTALL_PROG='apt-get'
+    # Get some updates packages
+    wget http://neuro.debian.net/lists/trusty.us-nh.full -O /etc/apt/sources.list.d/neurodebian.sources.list
+    apt-key adv --recv-keys --keyserver hkp://pgp.mit.edu:80 0xA5D32F012649A5A9
 elif [ -s /etc/redhat-release ]
 then
     LINUX_DIST='REDHAT'
@@ -128,6 +131,10 @@ then
     else
         $INSTALL_PROG install software-properties-common
     fi
+
+    # Get some updated packages from 3rd party
+    wget http://neuro.debian.net/lists/${DISTRIB_CODENAME}.us-nh.full -O /etc/apt/sources.list.d/neurodebian.sources.list
+    apt-key adv --recv-keys --keyserver hkp://pgp.mit.edu:80 0xA5D32F012649A5A9
 else
     $INSTALL_PROG install sudo vim-minimal ethtool perltidy system-config-network-tui system-config-firewall-tui
 fi
