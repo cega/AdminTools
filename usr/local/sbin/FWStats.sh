@@ -19,7 +19,7 @@ trap "rm -f /tmp/$$*" EXIT
 
 # First extract the logs for yesterday
 YESTERDAY=$(date +'%b %_d' -d yesterday)
-egrep "^$YESTERDAY .*IN=.*OUT=" /var/log/kern.log > /tmp/$$
+egrep -a "^$YESTERDAY .*IN=.*OUT=" /var/log/kern.log > /tmp/$$
 
 # Get numbers
 TOTAL=$(sed -n '$=' /tmp/$$)
