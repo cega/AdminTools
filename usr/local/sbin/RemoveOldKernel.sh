@@ -29,7 +29,16 @@ then
 fi
 
 # Ask the user whether to remove/purge other kernel versions
-for OK in $(dpkg-query --show  'linux-image-?.*.*' | awk '{print $1}' | grep -v "$CURKV")
+# Remove temp files at exit
+trap "rm -f /tmp/$$" EXIT
+
+# Get list of installed kernels
+dpkg-query --show 'linux-image-?.*.*' > /tmp/$$
+dpkg-query --show 'pve-kernel-*' >> /tmp/$$
+[ -s /tmp/$$ ] || exit 0
+
+# Ask the user whether to remove/purge other kernel versions
+for OK in $(awk '{print $1}' /tmp/$$ | grep -v "$CURKV")
 do
     OKS=$(dpkg-query --show --showformat='${Status}\n' $OK)
     echo "Kernel '$OK' status: $OKS"
