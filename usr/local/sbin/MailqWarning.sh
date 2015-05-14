@@ -186,6 +186,8 @@ Q_TOTAL=$(($Q_ACTIVE + $Q_INCOMING + $Q_DEFERRED + $Q_MAILDROP))
 # Send warning for total queue size
 if [ $Q_TOTAL -ge $M_TOTAL -o $FORCE_ALERT -ne 0 ]
 then
+    logger -i -p err -t mail -- Large TOTAL mail queue $Q_TOTAL
+
     LAST_WARNING=0
     NOW=$(date +%s)
     if [ -s /tmp/MailqWarning.TOTAL.last ]
