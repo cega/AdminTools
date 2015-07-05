@@ -252,6 +252,12 @@ iptables -I GEOIP_GEN -m geoip --src-cc CN,UA,RU,KP -j DROP
 iptables -I GEOIP_GEN -m geoip --src-cc CN,UA,RU,KP -j LOG --log-prefix "Geo-based rejection "
 iptables -I GEOIP_GEN -m geoip --dst-cc CN,UA,RU,KP -j DROP
 iptables -I GEOIP_GEN -m geoip --dst-cc CN,UA,RU,KP -j LOG --log-prefix "Geo-based rejection "
+# Do not allow any incoming SSDP traffic
+#iptables -I GEOIP_GEN -p udp -m udp --sport 1900 -j DROP
+#iptables -I GEOIP_GEN -p udp -m udp --sport 1900 -j LOG --log-prefix "SSDP rejection "
+# Limit the incoming traffic (needs tuning for seconds/hitcount)
+#iptables -I GEOIP_GEN 7 -m recent --set --name geoip_recent 
+#iptables -I GEOIP_GEN 8 -m recent --update --seconds 5 --hitcount 20 --name geoip_recent --rsource RETURN  
 
 # Interface No 1a - frontend (public).
 # The purpose of this interface is to control the traffic
