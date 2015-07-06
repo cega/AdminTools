@@ -258,6 +258,8 @@ iptables -I GEOIP_GEN -m geoip --dst-cc CN,UA,RU,KP -j LOG --log-prefix "Geo-bas
 # Limit the incoming traffic (needs tuning for seconds/hitcount)
 #iptables -I GEOIP_GEN 7 -m recent --set --name geoip_recent 
 #iptables -I GEOIP_GEN 8 -m recent --update --seconds 5 --hitcount 20 --name geoip_recent --rsource RETURN  
+# Limit the incoming traffic (needs tuning for limts)
+#iptables -I GEOIP_GEN_LIMIT 7 -m limit --limit 120/s --limit-burst 12 -j ACCEPT
 
 # Interface No 1a - frontend (public).
 # The purpose of this interface is to control the traffic
