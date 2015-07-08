@@ -425,7 +425,7 @@ newaliases
 postfix start || service postfix restart
 
 # Enable synchronization of postfix legitimate email addresses
-apt-get install mysql-client
+apt-get install mariadb-client
 
 cat << EOT > /usr/local/sbin/SyncLEA.sh
 #!/bin/bash
