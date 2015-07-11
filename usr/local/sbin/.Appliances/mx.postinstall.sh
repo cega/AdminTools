@@ -462,9 +462,11 @@ apt-get install libnet-dns-perl pyzor razor arj bzip2 cabextract cpio file gzip 
 apt-get install clamav-daemon clamav-freshclam clamav-unofficial-sigs
 freshclam -v
 service clamav-daemon restart
+pyzor --homedir /var/lib/amavis/.pyzor discover
 
 # Local customizations
 cat << EOT > /etc/amavis/conf.d/99-btoy1
+# Adapt for domains other than "btoy1"
 use strict;
 
 # The local networks
@@ -480,7 +482,8 @@ use strict;
   spam_dsn_cutoff_level_maps => [15],
   spam_dsn_cutoff_level_bysender_maps => [15],
   originating => 1,
-  allow_disclaimers => 1,
+  allow_disclaimers => 0,
+  ###ENABLE if you want disclaimers###allow_disclaimers => 1,
 };
       
 # Enable AV checks
@@ -490,13 +493,14 @@ use strict;
 @bypass_spam_checks_maps = (
    \%bypass_spam_checks, \@bypass_spam_checks_acl, \\\$bypass_spam_checks_re);
 
-# Enable disclaimers via "99-DisclaimerYes"
+# Enable disclaimers via "99-__DisclaimerYes"
 
 # Be less verbose with the added header line
 \$X_HEADER_LINE = "\$mydomain";
 
 #@whitelist_sender_acl = qw( 'btoy1.net', 'btoy1.rochester.ny.us' );
-@local_domains_maps = qw( 'btoy1.net', 'btoy1.rochester.ny.us' );
+#@local_domains_maps = qw( 'btoy1.net', 'btoy1.rochester.ny.us' );
+@local_domains_maps = read_hash('/var/tmp/local_domain_maps');
 
 # Where to send checked mail to
 \$forward_method = 'smtp:[127.0.0.1]:10025';
@@ -542,9 +546,14 @@ use strict;
 #------------ Do not modify anything below this line -------------
 1;  # ensure a defined return
 EOT
+cat << EOT > /var/tmp/local_domain_maps
+# Adapt for domains other than "btoy1"
+btoy1.net
+btoy1.rochester.ny.us
+EOT
 # By default enable disclaimers
 cat << EOT > /etc/amavis/conf.d/99-__DisclaimersYes
-# Enable disclaimers
+# Enable disclaimers (see also 99-btoy1)
 \$defang_maps_by_ccat{+CC_CATCHALL} = [ 'disclaimer' ];
 #------------ Do not modify anything below this line -------------
 1;  # ensure a defined return
