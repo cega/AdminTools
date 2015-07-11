@@ -68,12 +68,14 @@ postconf -e 'transport_maps = hash:'$PF_CD/transport
 if [ ! -s $PF_CD/transport ]
 then
     cat << EOT > $PF_CD/transport
+# Adapt to your domain(s) and server(s)
 btoy1.net	smtp:[192.168.1.29]
 .btoy1.net	smtp:[192.168.1.29]
 btoy1.rochester.ny.us	smtp:[192.168.1.29]
 .btoy1.rochester.ny.us	smtp:[192.168.1.29]
 EOT
 fi
+vi $PF_CD/transport
 postmap $PF_CD/transport
 
 # Setup sender-based email routing
@@ -102,12 +104,14 @@ postconf -e 'relay_domains = hash:'$PF_CD/relays
 if [ ! -s $PF_CD/relays ]
 then
     cat << EOT > $PF_CD/relays
+# Adapt to your domain(s)
 btoy1.net	OK
 .btoy1.net	OK
 btoy1.rochester.ny.us	OK
 .btoy1.rochester.ny.us	OK
 EOT
 fi
+vi $PF_CD/relays
 postmap $PF_CD/relays
 
 # Setup list of relay recipients
@@ -115,10 +119,12 @@ postconf -e 'relay_recipient_maps = hash:'$PF_CD/relay_recipients
 if [ ! -s $PF_CD/relay_recipients ]
 then
     cat << EOT > $PF_CD/relay_recipients
+# Adapt to your domain(s)
 @btoy1.net	OK
 @btoy1.rochester.ny.us	OK
 EOT
 fi
+vi $PF_CD/relay_recipients
 postmap $PF_CD/relay_recipients
 
 # Enable useful rejections for unknown clients
@@ -203,10 +209,12 @@ postmap $PF_CD/mx_access
 if [ ! -s $PF_CD/sender_access ]
 then
     cat << EOT > $PF_CD/sender_access
+# Adapt to your domain(s)
 btoy1.net	OK
 btoy1.rochester.ny.us	OK
 EOT
 fi
+vi $PF_CD/sender_access
 postmap $PF_CD/sender_access
 
 # Ensure that the header and body checks are perl regex tables
@@ -338,7 +346,7 @@ postconf -e 'bounce_queue_lifetime = 3h'
 postconf -e 'bounce_size_limit = 512'
 postconf -e 'minimal_backoff_time = 6m'
 postconf -e 'maximal_backoff_time = 60m'
-postconf -e 'smtpd_banner = mx.btoy1.net ESMTP UCE'
+postconf -e "smtpd_banner = mx.$LOCALDOMAIN ESMTP UCE"
 postconf -e 'biff = no'
 postconf -e 'address_verify_negative_refresh_time = 60m'
 
@@ -448,7 +456,7 @@ chmod 700 /usr/local/sbin/SyncLEA.sh
 cat << EOT > /etc/cron.d/les
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/sbin:/sbin:/usr/local/bin:/usr/bin:/bin
-MAILTO=rootmail@btoy1.rochester.ny.us
+MAILTO=postmaster@$LOCALDOMAIN
 ##############################################################################
 # Synchronize list of legitimate email addresses for postfix
 */3 * * * *       root    [ -x /usr/local/sbin/SyncLEA.sh ] && SyncLEA.sh
@@ -465,7 +473,11 @@ service clamav-daemon restart
 pyzor --homedir /var/lib/amavis/.pyzor discover
 
 # Local customizations
-cat << EOT > /etc/amavis/conf.d/99-btoy1
+AV_NOTIFY_EMAIL="postmaster@$LOCALDOMAIN"
+read -p "Email address for all virus/spam notifications and quarantines [$AV_NOTIFY_EMAIL] ? " UI 
+[ -z "$UI" ] || AV_NOTIFY_EMAIL="$UI"
+
+cat << EOT > /etc/amavis/conf.d/99-bluc
 # Adapt for domains other than "btoy1"
 use strict;
 
@@ -477,7 +489,7 @@ use strict;
   bypass_spam_checks_maps   => [1],  # don't spam-check internal mail
   bypass_banned_checks_maps => [1],  # don't banned-check internal mail
   bypass_header_checks_maps => [1],  # don't header-check internal mail
-  spam_admin_maps  => ["postmaster\@"], # alert of internal spam
+  spam_admin_maps  => ['$AV_NOTIFY_EMAIL'], # alert of internal spam
   spam_kill_level_maps => [7.0],  # slightly more permissive spam kill level
   spam_dsn_cutoff_level_maps => [15],
   spam_dsn_cutoff_level_bysender_maps => [15],
@@ -499,7 +511,6 @@ use strict;
 \$X_HEADER_LINE = "\$mydomain";
 
 #@whitelist_sender_acl = qw( 'btoy1.net', 'btoy1.rochester.ny.us' );
-#@local_domains_maps = qw( 'btoy1.net', 'btoy1.rochester.ny.us' );
 @local_domains_maps = read_hash('/var/tmp/local_domain_maps');
 
 # Where to send checked mail to
@@ -523,15 +534,15 @@ use strict;
 
 # Quarantine spams (sa_kill_level_deflt)
 \$final_spam_destiny = D_DISCARD;  # (defaults to D_REJECT)
-\$spam_quarantine_to = 'postmaster@btoy1.net';
-\$hdrfrom_notify_sender = 'postmaster@btoy1.net';
+\$spam_quarantine_to = '$AV_NOTIFY_EMAIL';
+\$hdrfrom_notify_sender = '$AV_NOTIFY_EMAIL';
 
 # See http://www.mikecappella.com/logwatch/amavis-logwatch.1.htm
 # http://eric.lubow.org/wp-content/uploads/2009/05/amavis-logwatch_1.49.09-1.1_i386.deb
 \$log_level = 2;
 
 # Tell the postmaster about virii
-\$virus_admin = 'postmaster@btoy1.net';
+\$virus_admin = '$AV_NOTIFY_EMAIL';
 
 # Defang any intercepted and labeled emails
 \$defang_virus = 1;
@@ -547,13 +558,13 @@ use strict;
 1;  # ensure a defined return
 EOT
 cat << EOT > /var/tmp/local_domain_maps
-# Adapt for domains other than "btoy1"
+# Adapt to your domain(s)
 btoy1.net
 btoy1.rochester.ny.us
 EOT
 # By default enable disclaimers
 cat << EOT > /etc/amavis/conf.d/99-__DisclaimersYes
-# Enable disclaimers (see also 99-btoy1)
+# Enable disclaimers (see also 99-bluc)
 \$defang_maps_by_ccat{+CC_CATCHALL} = [ 'disclaimer' ];
 #------------ Do not modify anything below this line -------------
 1;  # ensure a defined return
