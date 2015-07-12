@@ -154,7 +154,7 @@ M_ListMX() {
     echo
     echo -e "${BLUE}List of defined MX email domains:${NC}"
     echo
-    for D in $(grep 'OK' $PF_CD/relays)
+    for D in $(grep '^[^#].*OK' $PF_CD/relays)
     do
         [ "T$D" = 'TOK' ] && continue
 
