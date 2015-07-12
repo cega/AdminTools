@@ -34,7 +34,7 @@ LOCALNET=$((${LOCALIP%%.*}&${LOCALMASK%%.*})).$((${r%%.*}&${m%%.*})).$((${l##*.}
 #####
 add-apt-repository ppa:jonasped/ppa
 apt-get update
-apt-get dcc-client dcc-common
+apt-get install dcc-client dcc-common
 for F in $(grep -l loadplugin.*DCC /etc/spamassassin/*)
 do
     perl -p -i -e 's/#(loadplugin.*DCC)/$1/' $F
