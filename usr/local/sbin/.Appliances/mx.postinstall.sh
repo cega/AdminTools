@@ -562,6 +562,12 @@ cat << EOT > /var/tmp/local_domain_maps
 btoy1.net
 btoy1.rochester.ny.us
 EOT
+vi /var/tmp/local_domain_maps
+cat << EOT > /var/tmp/whitelist_sender_maps
+# Adapt to your email senders
+EOT
+vi /var/tmp/whitelist_sender_maps
+
 # By default enable disclaimers
 cat << EOT > /etc/amavis/conf.d/99-__DisclaimersYes
 # Enable disclaimers (see also 99-bluc)
@@ -667,9 +673,9 @@ EOT
 fi
 [ $PG_RESTART -ne 0 ] && service postgrey restart
 
-##########
+###########
 # ALTERMIME
-##########
+###########
 apt-get install altermime
 if [ ! -s /etc/altermime-disclaimer.txt ]
 then
