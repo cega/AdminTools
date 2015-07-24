@@ -504,7 +504,7 @@ fi
 wget -q https://github.com/trustedsec/artillery/archive/master.zip \
   -O /usr/local/src/artillery.zip
 cd /tmp
-unzip -f /usr/local/src/artillery.zip
+unzip -o /usr/local/src/artillery.zip
 cd artillery-master
 yes | ./setup.py
 
