@@ -439,17 +439,22 @@ cat << EOT > /usr/local/sbin/SyncLEA.sh
 #!/bin/bash
 # Synchronize postfix's legitimate email addresses
 
-mysql --skip-column-names --user='les' --password='CuHy4Wheat' --host=ms postfixadmin << EOM | sort -u > /tmp/Legitimate.EmailAddresses.txt
+trap "rm -f /tmp/\$\$*" EXIT
+
+mysql --skip-column-names --user='les' --password='CuHy4Wheat' --host=ms postfixadmin << EOM | sort -u > /tmp/\$\$.Legitimate.EmailAddresses.txt
 select address from alias;
 select username from mailbox;
 EOM
 
-awk '{print \$1}' $PF_CD/relay_recipients | sort -u > /tmp/Legitimate.EmailAddresses.RR
-diff -w /tmp/Legitimate.EmailAddresses.txt /tmp/Legitimate.EmailAddresses.RR &> /dev/null
+sort -u /etc/postfix/relay_recipients | cut -d' ' -f1 > $PF_CD/relay_recipients | sort -u > /tmp/\$\$.Legitimate.EmailAddresses.RR
+diff -w /tmp/\$\$.Legitimate.EmailAddresses.txt /tmp/\$\$.Legitimate.EmailAddresses.RR &> /dev/null
 if [ \$? -ne 0 ]
 then
-    awk '{print \$1" OK"}' /tmp/Legitimate.EmailAddresses.txt > $PF_CD/relay_recipients
+    awk '{print \$1" OK"}' /tmp/\$\$.Legitimate.EmailAddresses.txt > $PF_CD/relay_recipients
     postmap $PF_CD/relay_recipients
+    exit $?
+else
+    exit 1
 fi
 EOT
 chmod 700 /usr/local/sbin/SyncLEA.sh
