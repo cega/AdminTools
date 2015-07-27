@@ -453,9 +453,10 @@ then
     awk '{print \$1" OK"}' /tmp/\$\$.Legitimate.EmailAddresses.txt > $PF_CD/relay_recipients
     postmap $PF_CD/relay_recipients
     exit $?
-else
-    exit 1
 fi
+
+# We are done
+exit 0
 EOT
 chmod 700 /usr/local/sbin/SyncLEA.sh
 cat << EOT > /etc/cron.d/les
