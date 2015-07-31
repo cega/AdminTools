@@ -558,7 +558,7 @@ use strict;
 \$defang_undecipherable = 1;
 
 # Local whitelist
-@whitelist_sender_maps = read_hash('/var/tmp/whitelist_sender_maps'),
+@whitelist_sender_maps = read_hash('/var/tmp/whitelist_sender_maps');
 
 #------------ Do not modify anything below this line -------------
 1;  # ensure a defined return
