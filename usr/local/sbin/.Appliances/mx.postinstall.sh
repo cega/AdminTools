@@ -69,10 +69,8 @@ if [ ! -s $PF_CD/transport ]
 then
     cat << EOT > $PF_CD/transport
 # Adapt to your domain(s) and server(s)
-btoy1.net	smtp:[192.168.1.29]
-.btoy1.net	smtp:[192.168.1.29]
-btoy1.rochester.ny.us	smtp:[192.168.1.29]
-.btoy1.rochester.ny.us	smtp:[192.168.1.29]
+$LOCALDOMAIN	smtp:[192.168.1.29]
+.$LOCALDOMAIN	smtp:[192.168.1.29]
 EOT
 fi
 vi $PF_CD/transport
@@ -105,10 +103,8 @@ if [ ! -s $PF_CD/relays ]
 then
     cat << EOT > $PF_CD/relays
 # Adapt to your domain(s)
-btoy1.net	OK
-.btoy1.net	OK
-btoy1.rochester.ny.us	OK
-.btoy1.rochester.ny.us	OK
+$LOCALDOMAIN	OK
+.$LOCALDOMAIN	OK
 EOT
 fi
 vi $PF_CD/relays
@@ -120,8 +116,7 @@ if [ ! -s $PF_CD/relay_recipients ]
 then
     cat << EOT > $PF_CD/relay_recipients
 # Adapt to your domain(s)
-@btoy1.net	OK
-@btoy1.rochester.ny.us	OK
+@$LOCALDOMAIN	OK
 EOT
 fi
 vi $PF_CD/relay_recipients
@@ -210,8 +205,7 @@ if [ ! -s $PF_CD/sender_access ]
 then
     cat << EOT > $PF_CD/sender_access
 # Adapt to your domain(s)
-btoy1.net	OK
-btoy1.rochester.ny.us	OK
+$LOCALDOMAIN	OK
 EOT
 fi
 vi $PF_CD/sender_access
@@ -438,6 +432,7 @@ apt-get install mariadb-client
 cat << EOT > /usr/local/sbin/SyncLEA.sh
 #!/bin/bash
 # Synchronize postfix's legitimate email addresses
+# ADAPT to your environment
 
 trap "rm -f /tmp/\$\$*" EXIT
 
@@ -459,7 +454,7 @@ fi
 exit 0
 EOT
 chmod 700 /usr/local/sbin/SyncLEA.sh
-cat << EOT > /etc/cron.d/les
+cat << EOT > /etc/cron.d/SyncLEA
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/sbin:/sbin:/usr/local/bin:/usr/bin:/bin
 MAILTO=postmaster@$LOCALDOMAIN
@@ -484,7 +479,7 @@ read -p "Email address for all virus/spam notifications and quarantines [$AV_NOT
 [ -z "$UI" ] || AV_NOTIFY_EMAIL="$UI"
 
 cat << EOT > /etc/amavis/conf.d/99-bluc
-# Adapt for domains other than "btoy1"
+# Adapt for domains other than "$LOCALDOMAIN"
 use strict;
 
 # The local networks
@@ -516,7 +511,6 @@ use strict;
 # Be less verbose with the added header line
 \$X_HEADER_LINE = "\$mydomain";
 
-#@whitelist_sender_acl = qw( 'btoy1.net', 'btoy1.rochester.ny.us' );
 @local_domains_maps = read_hash('/var/tmp/local_domain_maps');
 
 # Where to send checked mail to
@@ -565,8 +559,7 @@ use strict;
 EOT
 cat << EOT > /var/tmp/local_domain_maps
 # Adapt to your domain(s)
-btoy1.net
-btoy1.rochester.ny.us
+$LOCALDOMAIN
 EOT
 vi /var/tmp/local_domain_maps
 cat << EOT > /var/tmp/whitelist_sender_maps
