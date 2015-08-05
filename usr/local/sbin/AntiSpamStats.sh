@@ -111,7 +111,9 @@ if [ -z "$PP_COUNTRY_REJ" ]
 then
     PP_COUNTRY_REJ=0
 else
-    PP_COUNTRY_LIST=$(grep ' country ' /tmp/$$.PPolicyd | mawk '{count[$12]++}END{for(j in count) print "                                  country",j,"("count[j]")"}' | sed 's/;//')
+    PP_COUNTRY_LIST=$(grep ' country ' /tmp/$$.PPolicyd | \
+      mawk -F\' '{c[$12]++}END{for(j in c) print "                                  country",j,"("c[j]")"}' | \
+      sed 's/;//' | sort -k2 -n)
 fi
 
 # Get the amavis results
