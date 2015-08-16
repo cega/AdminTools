@@ -572,20 +572,20 @@ net.ipv4.tcp_mem = 8388608 12582912 16777216
 net.ipv4.udp_mem = 8388608 12582912 16777216
 
 # Increase the maximum read-buffer space allocatable
-net.ipv4.tcp_rmem = 8192 87380 16777216
+net.ipv4.tcp_rmem = 8192 256960 16777216
 net.ipv4.udp_rmem_min = 16384
 
 # Increase the maximum write-buffer-space allocatable
-net.ipv4.tcp_wmem = 8192 65536 16777216
+net.ipv4.tcp_wmem = 8192 256960 16777216
 net.ipv4.udp_wmem_min = 16384
 
 # Increase the maximum and default receive socket buffer size
 net.core.rmem_max=16777216
-net.core.rmem_default=262144
+net.core.rmem_default=256960
 
 # Increase the maximum and default send socket buffer size
 net.core.wmem_max=16777216
-net.core.wmem_default=262144
+net.core.wmem_default=256960
 
 # Increase the tcp-time-wait buckets pool size
 net.ipv4.tcp_max_tw_buckets = 1440000
