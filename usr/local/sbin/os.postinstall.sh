@@ -759,7 +759,7 @@ then
     IS_VIRTUAL=3
 fi
 cd /sys/block
-for DEV in [vhs]d? xvd?
+for DEV in [vhs]d? xvd? cciss\!c[0-9]d[0-9]
 do
     [ -w \${DEV}/queue/nr_requests ] && echo 512 > \${DEV}/queue/nr_requests
     if [ -w \${DEV}/queue/read_ahead_kb ]
