@@ -706,7 +706,7 @@ then
         [ \$RA -ne \$SECTORS ] && blockdev --setra \$SECTORS /dev/\$DEV
     done
 fi
-for DEV in \$( ls /dev/[hs]d[a-z][0-9] | awk '{sub(/\/dev\//,"");printf "%s ",\$1}')
+for DEV in \$( ls /dev/[vhs]d[a-z][0-9] | awk '{sub(/\/dev\//,"");printf "%s ",\$1}')
 do
     RA=\$(blockdev --getra /dev/\$DEV)
     [ \$RA -ne \$SECTORS ] && blockdev --setra \$SECTORS /dev/\$DEV
@@ -721,6 +721,12 @@ do
     [ "T\$DEV" = 'Tcontrol' ] && continue
     RA=\$(blockdev --getra /dev/mapper/\$DEV)
     [ \$RA -ne \$SECTORS ] && blockdev --setra \$SECTORS /dev/mapper/\$DEV
+done
+for DEV in $( ls /dev/cciss/c[0-9]d[0-9] | awk '{sub(/\/dev\/cciss\//,"");printf "%s ",\$1}')
+do
+    [ "T\$DEV" = 'Tcontrol' ] && continue
+    RA=\$(blockdev --getra /dev/cciss/\$DEV)
+    [ \$RA -ne \$SECTORS ] && blockdev --setra \$SECTORS /dev/cciss/\$DEV
 done
 if [ -d /dev/etherd ]
 then
