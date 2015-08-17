@@ -673,6 +673,43 @@ fi
 [ $PG_RESTART -ne 0 ] && service postgrey restart
 
 ###########
+# FAIL2BAN
+###########
+apt-get install fail2ban
+cat << EOT > /etc/fail2ban/filter.d/ppolicyd.conf
+# Fail2Ban filter for zimbra authentication attempts
+#
+
+[INCLUDES]
+
+before = common.conf
+
+[Definition]
+
+_daemon = postfix/smtps/smtpd
+
+# Example: Client host [61.152.239.106] blocked by country
+failregex = ^%(__prefix_line)s.*Client host \[<HOST>\] blocked by country
+
+ignoreregex =
+
+# Author: Thomas Bullinger
+EOT
+
+cat << EOT > /etc/fail2ban/jail.local
+[ppolicyd]
+
+enabled  = true
+port     = smtp,smtps,ssmtp,submission
+filter   = ppolicyd
+logpath  = /var/log/mail.log
+bantime  = 300  ; 5 minutes
+findtime = 120  ; 2 minutes
+maxretry = 3    ; 3 occurences
+EOT
+service fail2ban restart
+
+###########
 # ALTERMIME
 ###########
 apt-get install altermime
