@@ -772,6 +772,14 @@ do
         then
             # Use "noop" for 3ware/Dell/Areca (Raid) units
             [ -w \${DEV}/queue/scheduler ] && echo noop > \${DEV}/queue/scheduler
+            echo $(< ${DEV}/queue/max_hw_sectors_kb) > ${DEV}/queue/max_sectors_kb
+            continue
+        fi
+        if [[ $DEV =~ cciss* ]]
+        then
+            # Use "noop" for HP (Raid) units
+            [ -w ${DEV}/queue/scheduler ] && echo noop > ${DEV}/queue/scheduler
+            echo $(< ${DEV}/queue/max_hw_sectors_kb) > ${DEV}/queue/max_sectors_kb
             continue
         fi
     fi
