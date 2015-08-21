@@ -761,7 +761,11 @@ fi
 cd /sys/block
 for DEV in [vhs]d? xvd? cciss\!c[0-9]d[0-9]
 do
+    # See: http://oss.oetiker.ch/rrdtool-trac/wiki/TuningRRD
     [ -w \${DEV}/queue/nr_requests ] && echo 512 > \${DEV}/queue/nr_requests
+    # See https://serverfault.com/questions/373563/linux-real-world-hardware-raid-controller-tuning-scsi-and-cciss
+    [ -w \${DEV}/queue/max-sectors_kb ] && echo $(< \${DEV}/queue/max_hw_sectors_kb) > \${DEV}/queue/max_sectors_kb
+
     if [ -w \${DEV}/queue/read_ahead_kb ]
     then
         [ \$(< \${DEV}/queue/read_ahead_kb) -lt 2048 ] && echo 2048 > \${DEV}/queue/read_ahead_kb
@@ -775,14 +779,14 @@ do
             echo $(< ${DEV}/queue/max_hw_sectors_kb) > ${DEV}/queue/max_sectors_kb
             continue
         fi
-        if [[ $DEV =~ cciss* ]]
-        then
-            # Use "noop" for HP (Raid) units
-            [ -w ${DEV}/queue/scheduler ] && echo noop > ${DEV}/queue/scheduler
-            echo $(< ${DEV}/queue/max_hw_sectors_kb) > ${DEV}/queue/max_sectors_kb
-            continue
-        fi
     fi
+    if [[ $DEV =~ cciss* ]]
+    then
+        # Use "noop" for HP (Raid) units
+        [ -w ${DEV}/queue/scheduler ] && echo noop > ${DEV}/queue/scheduler
+        continue
+    fi
+
     if [ \$IS_VIRTUAL -eq 0 ]
     then
         [ -w \${DEV}/queue/scheduler ] && echo cfq > \${DEV}/queue/scheduler
@@ -797,8 +801,6 @@ do
         # (favors writes over reads)
         [ -w \${DEV}/queue/iosched/slice_async ] && echo 10 > \${DEV}/queue/iosched/slice_async
         [ -w \${DEV}/queue/iosched/slice_sync ] && echo 100 > \${DEV}/queue/iosched/slice_sync
-        # See: http://oss.oetiker.ch/rrdtool-trac/wiki/TuningRRD
-        [ -w \${DEV}/queue/nr_requests ] && echo 512 > \${DEV}/queue/nr_requests
     else
         # Use "noop" for VMware and KVM guests
         [ -w \${DEV}/queue/scheduler ] && echo noop > \${DEV}/queue/scheduler
