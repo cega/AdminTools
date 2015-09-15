@@ -780,7 +780,7 @@ do
             continue
         fi
     fi
-    if [[ $DEV =~ cciss* ]]
+    if [[ \$DEV =~ cciss* ]]
     then
         # Use "noop" for HP (Raid) units
         [ -w ${DEV}/queue/scheduler ] && echo noop > ${DEV}/queue/scheduler
