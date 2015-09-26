@@ -187,6 +187,9 @@ function RestoreAcct() {
 	                local lastname=$(awk '/^sn/ {print $2}' $BKP_DIR/account.$ACCOUNT)
 	                local userid=$(awk '/^cn/ {print $2}' $BKP_DIR/account.$ACCOUNT)
 	                local description=$(awk '/^description/ {$1="";print}' $BKP_DIR/account.$ACCOUNT | sed -e "s/'/\\'/")
+			local zimbraArchiveEnabled=$(awk '/^zimbraArchiveEnabled/ {$1="";print}' $BKP_DIR/account.$ACCOUNT | sed -e "s/'/\\'/")
+			local zimbraArchiveAccount=$(awk '/^zimbraArchiveAccount/ {$1="";print}' $BKP_DIR/account.$ACCOUNT | sed -e "s/'/\\'/")
+			local amavisArchiveQuarantineTo=$(awk '/^amavisArchiveQuarantineTo/ {$1="";print}' $BKP_DIR/account.$ACCOUNT | sed -e "s/'/\\'/")
 	                local NOW=$(date)
 
 	                > /tmp/$$.CreateAccount
@@ -201,6 +204,12 @@ function RestoreAcct() {
 	                echo "ma $ACCOUNT description $description" >> /tmp/$$.CreateAccount
 	                echo "ma $ACCOUNT zimbraNotes Migrated $NOW" >> /tmp/$$.CreateAccount
 	                [ -z "$MUST_CHANGE_PW" ] || echo "ma $ACCOUNT $MUST_CHANGE_PW" >> /tmp/$$.CreateAccount
+			if [ "T${zimbraArchiveEnabled^^}" = 'TTRUE' ]
+			then
+				echo "ma $ACCOUNT zimbraArchiveEnabled $zimbraArchiveEnabled" >> /tmp/$$.CreateAccount
+				echo "ma $ACCOUNT amavisArchiveQuarantineTo  $amavisArchiveQuarantineTo" >> /tmp/$$.CreateAccount
+				echo "ma $ACCOUNT zimbraArchiveAccount  $zimbraArchiveAccount" >> /tmp/$$.CreateAccount
+			fi
 	                su - zimbra -c "zmprov < /tmp/$$.CreateAccount" >> >(tee $LOG_OUT) 2>> >(tee $LOG_ERR >&2)
 	                [ $FORCE_SKIP -eq 0 ] && RESOLUTION='reset'
 	        fi
