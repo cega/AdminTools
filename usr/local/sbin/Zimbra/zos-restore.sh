@@ -187,9 +187,9 @@ function RestoreAcct() {
 	                local lastname=$(awk '/^sn/ {print $2}' $BKP_DIR/account.$ACCOUNT)
 	                local userid=$(awk '/^cn/ {print $2}' $BKP_DIR/account.$ACCOUNT)
 	                local description=$(awk '/^description/ {$1="";print}' $BKP_DIR/account.$ACCOUNT | sed -e "s/'/\\'/")
-			local zimbraArchiveEnabled=$(awk '/^zimbraArchiveEnabled/ {$1="";print}' $BKP_DIR/account.$ACCOUNT | sed -e "s/'/\\'/")
-			local zimbraArchiveAccount=$(awk '/^zimbraArchiveAccount/ {$1="";print}' $BKP_DIR/account.$ACCOUNT | sed -e "s/'/\\'/")
-			local amavisArchiveQuarantineTo=$(awk '/^amavisArchiveQuarantineTo/ {$1="";print}' $BKP_DIR/account.$ACCOUNT | sed -e "s/'/\\'/")
+			local zimbraArchiveEnabled=$(awk '/^zimbraArchiveEnabled:/ {$1="";print}' $BKP_DIR/account.$ACCOUNT | sed -e "s/^ //;s/'/\\'/")
+			local zimbraArchiveAccount=$(awk '/^zimbraArchiveAccount:/ {$1="";print}' $BKP_DIR/account.$ACCOUNT | sed -e "s/^ //;s/'/\\'/")
+			local amavisArchiveQuarantineTo=$(awk '/^amavisArchiveQuarantineTo:/ {$1="";print}' $BKP_DIR/account.$ACCOUNT | sed -e "s/^ //;s/'/\\'/")
 	                local NOW=$(date)
 
 	                > /tmp/$$.CreateAccount
