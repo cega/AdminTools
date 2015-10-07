@@ -1,0 +1,76 @@
+#!/usr/bin/perl -w
+#--------------------------------------------------------------------
+# (c) CopyRight 2015 B-LUC Consulting and Thomas Bullinger
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#--------------------------------------------------------------------
+use 5.0010;
+
+# Constants
+my $ProgName = '';
+( $ProgName = $0 ) =~ s%.*/%%;
+my $CopyRight = "(c) CopyRight 2015 B-LUC Consulting Thomas Bullinger";
+
+# Common sense options:
+use strict qw(vars subs);
+no warnings;
+use warnings qw(FATAL closed threads internal debugging pack
+    portable prototype inplace io pipe unpack malloc
+    glob digit printf layer reserved taint closure
+    semicolon);
+no warnings qw(exec newline unopened);
+
+#--------------------------------------------------------------------
+# Needed packages
+#--------------------------------------------------------------------
+use File::Copy;
+use Getopt::Std;
+
+#--------------------------------------------------------------------
+# Globals
+#--------------------------------------------------------------------
+$ENV{PATH} = '/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin';
+
+# Program options
+our $opt_d = 0;
+our $opt_h = 0;
+
+#--------------------------------------------------------------------
+# Display the usage
+#--------------------------------------------------------------------
+sub ShowUsage()
+{
+
+    print "Usage: $ProgName [options] source-file destination-file\n"
+        . "       -h       Show this help [default=no]\n"
+        . "       -d       Show some debug info on STDERR [default=no]\n\n";
+
+    exit 0;
+} ## end sub ShowUsage
+
+#--------------------------------------------------------------------
+# Main function
+#--------------------------------------------------------------------
+$|++;
+
+# Get possible options
+getopts('dh') or ShowUsage();
+ShowUsage() if ( ($opt_h) or ( $#ARGV < 1 ) );
+
+my $src = "$ARGV[0]";
+my $dest = "$ARGV[1]";
+warn "Copying '$src' to '$dest'\n" if ($opt_d);
+copy( "$src", "$dest" ) or die "Copying '$src' to '$dest' failed: $!\n";
+exit(0);
+
+__END__
