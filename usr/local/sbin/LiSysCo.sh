@@ -230,7 +230,7 @@ EOT
                 RSYNC_PORT=2873
                 if [ -s $LOCAL_KEY_FILE ]
                 then
-                    ssh $DEBUG -N -p 22 -i $LOCAL_KEY_FILE "$SSH_USERID@$SSH_SERVER" -L $RSYNC_PORT:127.0.0.1:873 &
+                    ssh $DEBUG -4 -N -p 22 -i $LOCAL_KEY_FILE "$SSH_USERID@$SSH_SERVER" -L $RSYNC_PORT:127.0.0.1:873 &
                 else
                     echo "No way to set up SSH tunnel"
                     exit 1
