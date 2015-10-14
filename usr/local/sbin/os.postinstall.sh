@@ -342,25 +342,25 @@ EOT
     fi
 fi
 
-#--------------------------------------------------------------------
-if [ -z "$(grep opa /etc/passwd)" ]
-then
-    # Create the operator account
-    useradd -s /bin/bash -m -c 'Linux Operator' opa
-    passwd opa
-else
-    # Give the "opa" account a meaningful full name
-    [ -z "$(getent passwd opa)" ] || chfn -f 'Linux Operator' opa
-fi
-if [ -d /etc/sudoers.d ]
-then
-    # Make sure that "opa" can execute "sudo"
-    cat << EOT > /etc/sudoers.d/opa
-## Allow opa to run any commands anywhere 
-opa    ALL=(ALL)       ALL
-EOT
-    chmod 440 /etc/sudoers.d/opa
-fi
+#OPTIONAL #--------------------------------------------------------------------
+#OPTIONAL if [ -z "$(grep opa /etc/passwd)" ]
+#OPTIONAL then
+#OPTIONAL     # Create the operator account
+#OPTIONAL     useradd -s /bin/bash -m -c 'Linux Operator' opa
+#OPTIONAL     passwd opa
+#OPTIONAL else
+#OPTIONAL     # Give the "opa" account a meaningful full name
+#OPTIONAL     [ -z "$(getent passwd opa)" ] || chfn -f 'Linux Operator' opa
+#OPTIONAL fi
+#OPTIONAL if [ -d /etc/sudoers.d ]
+#OPTIONAL then
+#OPTIONAL     # Make sure that "opa" can execute "sudo"
+#OPTIONAL     cat << EOT > /etc/sudoers.d/opa
+#OPTIONAL ## Allow opa to run any commands anywhere 
+#OPTIONAL opa    ALL=(ALL)       ALL
+#OPTIONAL EOT
+#OPTIONAL     chmod 440 /etc/sudoers.d/opa
+#OPTIONAL fi
 
 #--------------------------------------------------------------------
 # Tweak system for security and performance
