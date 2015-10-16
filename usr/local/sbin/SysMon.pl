@@ -844,6 +844,14 @@ sub ReportInterval()
                 $DiskPart   = "$1";
                 $DiskReads  = $2 * 512;
                 $DiskWrites = $3 * 512;
+            } elsif ( $DEVLine
+                =~ /^\s*\d+\s+\d+\s+(cciss\/c\dd\dp\d)\s+\d+\s+\d+\s+(\d+)\s+\d+\s+\d+\s+\d+\s+(\d+)/o
+                )
+            {
+                # cciss/c?d?p?, eg. cciss/c0d0p1
+                $DiskPart   = "$1";
+                $DiskReads  = $2 * 512;
+                $DiskWrites = $3 * 512;
             } ## end elsif ( $DEVLine =~ ...)
 
             # No need to continue if we don't have a disk partition
