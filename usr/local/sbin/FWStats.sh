@@ -17,25 +17,32 @@
 
 trap "rm -f /tmp/$$*" EXIT
 
-# First extract the logs for yesterday
-YESTERDAY=$(date +'%b %_d' -d yesterday)
-egrep -a "^$YESTERDAY .*IN=.*OUT=" /var/log/kern.log > /tmp/$$
+DESIRED_DAY=${1-yesterday}
+
+# First extract the logs for desired day
+YESTERDAY=$(date +'%b %_d' -d "$DESIRED_DAY")
+zegrep -a "^$YESTERDAY .*IN=.*OUT=" /var/log/kern.log* > /tmp/$$
 
 # Get numbers
 TOTAL=$(sed -n '$=' /tmp/$$)
 GEO_REJ=$(grep -c 'Geo-based rejection' /tmp/$$)
-BLOCKED=$(grep -c 'BLOCKED:' /tmp/$$)
+BLOCKED_GEN=$(grep -c '] BLOCKED:' /tmp/$$)
+BLOCKED_SH=$(grep -c 'SPAMHAUS BLOCKED:' /tmp/$$)
+BLOCKED_ETBL=$(grep -c 'ETBL BLOCKED:' /tmp/$$)
+BLOCKED_DSHIELD=$(grep -c 'DHSILED BLOCKED:' /tmp/$$)
+BLOCKED=$(($BLOCKED_GEN + $BLOCKED_SH + $BLOCKED_ETBL + $BLOCKED_DSHIELD))
 FLOOD=$(grep -c 'FLOOD' /tmp/$$)
 MALFORMED=$(grep -c 'MALFORMED ' /tmp/$$)
 FRAGMENTS=$(grep -c 'FRAGMENTS ' /tmp/$$)
 NOSYN=$(grep -c 'NEW TCP w/o SYN' /tmp/$$)
 BANNED=$(grep -c 'fail2ban' /tmp/$$)
 PORTSCAN=$(grep -c 'Portscan' /tmp/$$)
-GEN_ISP_REJ=$(grep -c 'IN-ISP:' /tmp/$$)
-GEN_LAN_REJ=$(grep -c 'IN-LAN:' /tmp/$$)
+GEN_ISP_REJ=$(grep -c 'IN-external:' /tmp/$$)
+GEN_LAN_REJ=$(grep -c 'IN-internal:' /tmp/$$)
 GEN_DMZ_REJ=$(grep -c 'IN-DMZ:' /tmp/$$)
-GEN_REJ=$(egrep '(Rejected (TCP|UDP)|(IN|OUT)-)' /tmp/$$ | egrep -cv '\-(LAN|DMZ|ISP|Portscan)')
+GEN_REJ=$(egrep '(Rejected (TCP|UDP)|(IN|OUT)-)' /tmp/$$ | egrep -cv '\-((in|ex)ternal|DMZ|Portscan)')
 OTHER=$(($TOTAL - $GEO_REJ - $BLOCKED - $FLOOD - $MALFORMED - $FRAGMENTS - $NOSYN - $BANNED - $PORTSCAN - $GEN_ISP_REJ - $GEN_LAN_REJ - $GEN_DMZ_REJ - $GEN_REJ))
+[ $OTHER -lt 0 ] && OTHER=0
 
 # Nicely report the numbers
 cat << EOT
@@ -45,6 +52,10 @@ cat << EOT
 
  Blocked by geography        : `echo $GEO_REJ | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta'` (`echo $TOTAL $GEO_REJ | awk '{ printf("%.2f%%\n", $2/($1/100)) }'`)
  Blocked by blocklists       : `echo $BLOCKED | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta'` (`echo $TOTAL $BLOCKED | awk '{ printf("%.2f%%\n", $2/($1/100)) }'`)
+  Blocked by Spamhaus        : `echo $BLOCKED_SH | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta'` (`echo $TOTAL $BLOCKED_SH | awk '{ printf("%.2f%%\n", $2/($1/100)) }'`)
+  Blocked by DShield         : `echo $BLOCKED_DSHIELD | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta'` (`echo $TOTAL $BLOCKED_DSHIELD | awk '{ printf("%.2f%%\n", $2/($1/100)) }'`)
+  Blocked by EmergingThreads : `echo $BLOCKED_ETBL | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta'` (`echo $TOTAL $BLOCKED_ETBL | awk '{ printf("%.2f%%\n", $2/($1/100)) }'`)
+  Blocked generically        : `echo $BLOCKED_GEN | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta'` (`echo $TOTAL $BLOCKED_GEN | awk '{ printf("%.2f%%\n", $2/($1/100)) }'`)
  Blocked malformed traffic   : `echo $MALFORMED | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta'` (`echo $TOTAL $MALFORMED | awk '{ printf("%.2f%%\n", $2/($1/100)) }'`)
  Blocked fragmented traffic  : `echo $FRAGMENTS | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta'` (`echo $TOTAL $FRAGMENTS | awk '{ printf("%.2f%%\n", $2/($1/100)) }'`)
  Blocked by flood protections: `echo $FLOOD | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta'` (`echo $TOTAL $FLOOD | awk '{ printf("%.2f%%\n", $2/($1/100)) }'`)
@@ -60,3 +71,4 @@ EOT
 
 # We are done
 exit 0
+
