@@ -520,7 +520,7 @@ sub ReportInterval()
         if ($opt_d);
 
     #-------------------------------------------------
-    # Also get partition infos
+    # Also get partition infos (space)
     if ( open( PARTINFO, '-|', "df -TP" ) )
     {
         while ( my $PartLine = <PARTINFO> )
@@ -604,6 +604,97 @@ sub ReportInterval()
                 {
                     print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
                         ": INFO: FileSystem '$FileSystem' mounted on '$MountPoint' usage is $PercUsed%\n";
+                } ## end else [ if ( $opt_s eq 'syslog'...)]
+            } ## end else [ if ( $PercUsed > 75 ) ]
+        } ## end while ( my $PartLine = <PARTINFO>...)
+        close(PARTINFO);
+    } ## end if ( open( PARTINFO, '-|'...))
+
+    #-------------------------------------------------
+    # Also get partition infos (inodes)
+    if ( open( PARTINFO, '-|', "df -TPi" ) )
+    {
+        while ( my $PartLine = <PARTINFO> )
+        {
+            chomp($PartLine);
+            # We are only interested in ext2, ext3 and ext4 partitions
+            next
+                unless ( $PartLine
+                =~ /^(\S+)\s+ext[2-4]\s+[0-9]+\s+[0-9]+\s+[0-9]+\s+([0-9]+)%\s+(\S+)/o
+                );
+            my $FileSystem = "$1";
+            my $PercUsed   = $2;
+            my $MountPoint = "$3";
+            warn
+                "DEBUG: FileSystem '$FileSystem' mounted on '$MountPoint' inode usage is $PercUsed%\n"
+                if ($opt_d);
+            if ($opt_o)
+            {
+                # Also write data into corresponding '.csv' file
+                my $FileSystem_Sanitized = $FileSystem;
+                $FileSystem_Sanitized =~ s@/@#@g;
+                my ($outfile)
+                    = "$opt_o/Inodes_$FileSystem_Sanitized.csv" =~ /^([^\0]+)$/;
+                if ( open( CSV, '>>', $outfile ) )
+                {
+                    printf CSV '"' . "%s" . '"' . ",%d\n", $Now, $PercUsed;
+                    close(CSV);
+                } ## end if ( open( CSV, '>>', ...))
+            } ## end if ($opt_o)
+
+            # Issue error/critical messages based on the percentage used
+            if ( $PercUsed > 75 )
+            {
+                if ( $PercUsed > 85 )
+                {
+                    if ( $opt_s eq 'syslog' )
+                    {
+                        syslog 6,
+                            "crit FileSystem '%s' mounted on '%s' inode usage is %d%%",
+                            $FileSystem, $MountPoint, $PercUsed;
+                    } else
+                    {
+                        print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
+                            ": CRITICAL: FileSystem '$FileSystem' mounted on '$MountPoint' inode usage is $PercUsed%\n";
+                    } ## end else [ if ( $opt_s eq 'syslog'...)]
+                    if ($opt_a)
+                    {
+                        # Also send an email alert
+                        SendEmail(
+                            "CRITICAL: FileSystem '$FileSystem' mounted on '$MountPoint' inode usage is $PercUsed%"
+                        );
+                    } ## end if ($opt_a)
+                } else
+                {
+                    if ( $opt_s eq 'syslog' )
+                    {
+                        syslog 6,
+                            "err FileSystem '%s' mounted on '%s' inode usage is %d%%",
+                            $FileSystem, $MountPoint, $PercUsed;
+                    } else
+                    {
+                        print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
+                            ": ERROR: FileSystem '$FileSystem' mounted on '$MountPoint' inode usage is $PercUsed%\n";
+                    } ## end else [ if ( $opt_s eq 'syslog'...)]
+                } ## end else [ if ( $PercUsed > 85 ) ]
+                if ($opt_a)
+                {
+                    # Also send an email alert
+                    SendEmail(
+                        "ERROR: FileSystem '$FileSystem' mounted on '$MountPoint' inode usage is $PercUsed%"
+                    );
+                } ## end if ($opt_a)
+            } else
+            {
+                if ( $opt_s eq 'syslog' )
+                {
+                    syslog 6,
+                        "info FileSystem '%s' mounted on '%s' inode usage is %d%%",
+                        $FileSystem, $MountPoint, $PercUsed;
+                } else
+                {
+                    print LF strftime( "%Y-%m-%d %H:%M:%S", localtime ),
+                        ": INFO: FileSystem '$FileSystem' mounted on '$MountPoint' inode usage is $PercUsed%\n";
                 } ## end else [ if ( $opt_s eq 'syslog'...)]
             } ## end else [ if ( $PercUsed > 75 ) ]
         } ## end while ( my $PartLine = <PARTINFO>...)
