@@ -25,6 +25,7 @@ Email the log file once it is available
 =end comment
 
 =cut
+
 use 5.0010;
 
 # Constants
@@ -43,6 +44,7 @@ no warnings qw(exec newline unopened);
 #--------------------------------------------------------------------
 # Needed packages
 #--------------------------------------------------------------------
+use Sys::Hostname;
 use Getopt::Std;
 use Net::SMTP;
 
@@ -63,6 +65,18 @@ my $dumpdir  = $ENV{DUMPDIR};
 my $hostname = $ENV{HOSTNAME};
 my $tarfile  = $ENV{TARFILE};
 my $logfile  = $ENV{LOGFILE};
+
+my $ThisHost = hostname;
+unless ( $ThisHost =~ /\./ )
+{
+
+    if ( open( HOSTNAME, 'hostname -f |' ) )
+    {
+        $ThisHost = <HOSTNAME>;
+        close(HOSTNAME);
+        chomp($ThisHost);
+    } ## end if ( open( HOSTNAME, 'hostname -f |'...))
+} ## end unless ( $ThisHost =~ /\./...)
 
 # SMTP parameters
 my $SMTP_Host = 'localhost';
@@ -91,101 +105,122 @@ our $opt_d = 0;
 #-------------------------------------------------------------------------
 # Send an email (simple SMTP client)
 #-------------------------------------------------------------------------
-sub SendEmail ($$) {
+sub SendEmail ($$)
+{
     my ( $Subject, $MsgText ) = @_;
     warn "DBG: Sending email '$MsgText'\n" if ($opt_d);
 
-    my $Try        = 0;
-    while ( $Try < 3 ) {
+    my $Try = 0;
+    while ( $Try < 3 )
+    {
         my $smtp = Net::SMTP->new( "$SMTP_Host", Debug => $opt_d );
-        unless ( defined $smtp ) {
+        unless ( defined $smtp )
+        {
             $Try++;
             next;
         } ## end unless ( defined $smtp )
 
         # The envelope
         my $res = $smtp->mail("$SMTP_From");
-        unless ($res) {
+        unless ($res)
+        {
             $Try++;
             next;
         } ## end unless ($res)
         $res = $smtp->to("$SMTP_To");
-        unless ($res) {
+        unless ($res)
+        {
             $Try++;
             next;
         } ## end unless ($res)
 
         # The real email
         $res = $smtp->data();
-        unless ($res) {
+        unless ($res)
+        {
             $Try++;
             next;
         } ## end unless ($res)
 
         # The email body
-        my $Msg =
-            "From: $SMTP_From\n"
-          . "To: $SMTP_To\n"
-          . "Subject: $Subject\n"
-          . "Date: $RFC822Date\n"
-          . "Mime-Version: 1.0\n"
-          . "Comments: $ProgName $SMTP_Host\n"
-          . "X-Mailer: $ProgName $SMTP_Host\n\n"
-          . "$MsgText\n";
+        my $Msg
+            = "From: $SMTP_From\n"
+            . "To: $SMTP_To\n"
+            . "Subject: $Subject\n"
+            . "Date: $RFC822Date\n"
+            . "Mime-Version: 1.0\n"
+            . "Comments: $ProgName $SMTP_Host\n"
+            . "X-Mailer: $ProgName $SMTP_Host\n\n"
+            . "$MsgText\n";
 
         $res = $smtp->datasend("$Msg");
-        unless ($res) {
+        unless ($res)
+        {
             $Try++;
             next;
         } ## end unless ($res)
 
         # End the SMTP session
         $res = $smtp->dataend();
-        unless ($res) {
+        unless ($res)
+        {
             $Try++;
             next;
         } ## end unless ($res)
         $res = $smtp->quit;
-        unless ($res) {
+        unless ($res)
+        {
             $Try++;
             next;
         } ## end unless ($res)
         last;
     } ## end while ( $Try < 3 )
-    if ( $Try >= 3 ) {
+    if ( $Try >= 3 )
+    {
 
         # Could not open connection to mail server
         # (tried 3 times!)
         warn "critical %s %s Could not send email '%s'", POSIX::ctime(time),
-          $SMTP_Host, $MsgText;
+            $SMTP_Host, $MsgText;
     } ## end if ( $Try >= 3 )
-} ## end sub SendEmail ($)
+} ## end sub SendEmail ($$)
 
 #-------------------------------------------------------------------------
 # Do nothing
 #-------------------------------------------------------------------------
-sub nop {
+sub nop
+{
 
     # Do nothing
     return;
-}
+} ## end sub nop
 
 #-------------------------------------------------------------------------
 # Actions to be done when the logfile is present
 #-------------------------------------------------------------------------
-sub log_end {
+sub log_end
+{
 
     # Get the contents of the log file
     my $LF;
-    if ( open( $LF, '<', $logfile ) ) {
-        my @LogFileContents = <$LF>;
+    if ( open( $LF, '<', $logfile ) )
+    {
+        my @LogFileContents;
+        while (<$LF>)
+        {
+            unless (/status: /o)
+            {
+                # Weed out status lines
+                push( @LogFileContents, "$_" );
+            } ## end unless (/status: /o)
+        } ## end while (<$LF>)
         close($LF);
 
         # Email the log file to the specified recipient
-        SendEmail( "vzdump backup log for '$vmid' on '$hostname'",
+        SendEmail( "vzdump backup log for '$vmid' ($hostname) on '$ThisHost'",
             join( "", @LogFileContents ) );
-    }
-}
+    } ## end if ( open( $LF, '<', $logfile...))
+} ## end sub log_end
 
 #-------------------------------------------------------------------------
 # Main function
@@ -193,8 +228,8 @@ sub log_end {
 
 # Run the correct function for the specified phase
 exists $dispatch{$phase}
-  ? $dispatch{$phase}()
-  : die "ERROR: Got unknown phase '$phase'\n";
+    ? $dispatch{$phase}()
+    : die "ERROR: Got unknown phase '$phase'\n";
 
 exit(0);
 __END__
