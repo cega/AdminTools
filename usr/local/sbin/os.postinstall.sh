@@ -784,7 +784,11 @@ do
         then
             # Use "noop" for 3ware/Dell/Areca (Raid) units
             [ -w \${DEV}/queue/scheduler ] && echo noop > \${DEV}/queue/scheduler
-            echo $(< ${DEV}/queue/max_hw_sectors_kb) > ${DEV}/queue/max_sectors_kb
+            continue
+        elif [ ! -z "$(egrep 'Intel' ${DEV}/device/vendor)" -a ! -z "$(egrep 'RS3DC080' ${DEV}/device/model)" ]
+        then
+            # Use "noop" for Intel (Raid) units
+            [ -w ${DEV}/queue/scheduler ] && echo noop > ${DEV}/queue/scheduler
             continue
         fi
     fi
