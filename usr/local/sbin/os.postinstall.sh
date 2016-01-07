@@ -761,10 +761,18 @@ fi
 cd /sys/block
 for DEV in [vhs]d? xvd? cciss\!c[0-9]d[0-9]
 do
+    [ -d \$DEV ] || continue
+
     # See: http://oss.oetiker.ch/rrdtool-trac/wiki/TuningRRD
     [ -w \${DEV}/queue/nr_requests ] && echo 512 > \${DEV}/queue/nr_requests
     # See https://serverfault.com/questions/373563/linux-real-world-hardware-raid-controller-tuning-scsi-and-cciss
-    [ -w \${DEV}/queue/max-sectors_kb ] && echo $(< \${DEV}/queue/max_hw_sectors_kb) > \${DEV}/queue/max_sectors_kb
+    [ -w \${DEV}/queue/max-sectors_kb ] && echo \$(< \${DEV}/queue/max_hw_sectors_kb) > \${DEV}/queue/max_sectors_kb
+
+    # Set up modern CPU IRQ affinity
+    [ -w \${DEV}/queue/rq_affinity ] && echo 2 > \${DEV}/queue/rq_affinity
+
+    # Set disk entropy based on disk type (0 = SSD, 1 = HDD)
+    cat \${DEV}/queue/rotational > \${DEV}/queue/add_random
 
     if [ -w \${DEV}/queue/read_ahead_kb ]
     then
