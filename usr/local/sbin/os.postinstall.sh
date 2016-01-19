@@ -137,8 +137,8 @@ else
 fi
 
 #--------------------------------------------------------------------
-# Activate the HPN patched SSH
-[ "T$LINUX_DIST" = 'TDEBIAN' ] && apt-add-repository ppa:w-rouesnel/openssh-hpn
+# Activate the HPN patched SSH (no longer exists :( )
+#HPN#[ "T$LINUX_DIST" = 'TDEBIAN' ] && apt-add-repository ppa:w-rouesnel/openssh-hpn
 
 if [ $(grep -c '^processor' /proc/cpuinfo) -gt 1 ]
 then
@@ -164,19 +164,20 @@ sed -ie 's/^[[:space:]]*Protocol.*/Protocol 2/' /etc/ssh/ssh_config
 # Use secure and fast ciphers only
 [ -z "$(grep '^[[:space:]]*Ciphers.*blowfish' /etc/ssh/ssh_config)" ] && echo 'Ciphers blowfish-cbc,aes256-cbc,aes192-cbc,aes128-cbc,3des-cbc,cast128-cbc,arcfour' >> /etc/ssh/ssh_config
 
-if [ "T$LINUX_DIST" = 'TDEBIAN' ]
-then
-    for F in ssh_config sshd_config
-    do
-        if [ -z "$(grep '^TcpRcvBufPoll no' /etc/ssh/$F)" ]
-        then
-        cat << EOT >> /etc/ssh/$F
-# Enable large file transfers
-TcpRcvBufPoll no
-EOT
-        fi
-    done
-fi
+#HPN# NO LONGER EXISTS :(
+#HPN#if [ "T$LINUX_DIST" = 'TDEBIAN' ]
+#HPN#then
+#HPN#    for F in ssh_config sshd_config
+#HPN#    do
+#HPN#        if [ -z "$(grep '^TcpRcvBufPoll no' /etc/ssh/$F)" ]
+#HPN#        then
+#HPN#        cat << EOT >> /etc/ssh/$F
+#HPN## Enable large file transfers
+#HPN#TcpRcvBufPoll no
+#HPN#EOT
+#HPN#        fi
+#HPN#    done
+#HPN#fi
 
 #--------------------------------------------------------------------
 # Adjust the mount options for any ext{3|4} partition
