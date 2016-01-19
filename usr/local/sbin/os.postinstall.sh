@@ -311,6 +311,12 @@ interface eth0 external_1 src not "\${home_net}" dst ${LOCALIP}
         #       client services you really need.
         client all GEOIP_GEN
 EOT
+
+        if [ $(dpkg -l firehol | awk '/^ii/ {print int($3)}') -ge 2 ]
+        then
+             # Use explicit ipv4 commands in newer versions
+             sed -i 's/interface /interface 4/g;s/server /server4 /g;s/client /client4 /g' /etc/firehol/firehol.conf
+        fi
     fi
     sed -ie 's/^[[:space:]]*START_FIREHOL.*/START_FIREHOL=YES/' /etc/default/firehol
 elif [ -x /usr/bin/system-config-firewall-tui ]
