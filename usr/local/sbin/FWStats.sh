@@ -29,7 +29,7 @@ GEO_REJ=$(grep -c 'Geo-based rejection' /tmp/$$)
 BLOCKED_GEN=$(grep -c '] BLOCKED:' /tmp/$$)
 BLOCKED_SH=$(grep -c 'SPAMHAUS BLOCKED:' /tmp/$$)
 BLOCKED_ETBL=$(grep -c 'ETBL BLOCKED:' /tmp/$$)
-BLOCKED_DSHIELD=$(grep -c 'DHSILED BLOCKED:' /tmp/$$)
+BLOCKED_DSHIELD=$(grep -c 'DSHIELD BLOCKED:' /tmp/$$)
 BLOCKED=$(($BLOCKED_GEN + $BLOCKED_SH + $BLOCKED_ETBL + $BLOCKED_DSHIELD))
 FLOOD=$(grep -c 'FLOOD' /tmp/$$)
 MALFORMED=$(grep -c 'MALFORMED ' /tmp/$$)
@@ -46,7 +46,7 @@ OTHER=$(($TOTAL - $GEO_REJ - $BLOCKED - $FLOOD - $MALFORMED - $FRAGMENTS - $NOSY
 
 # Nicely report the numbers
 cat << EOT
- Firewall rejection statistics for `date +%F -d yesterday`
+ Firewall rejection statistics for `date +%F -d $DESIRED_DAY`
 
  Total number of log entries : `echo $TOTAL | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta'`
 
@@ -71,4 +71,3 @@ EOT
 
 # We are done
 exit 0
-
