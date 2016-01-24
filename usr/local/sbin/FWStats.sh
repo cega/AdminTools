@@ -46,7 +46,7 @@ OTHER=$(($TOTAL - $GEO_REJ - $BLOCKED - $FLOOD - $MALFORMED - $FRAGMENTS - $NOSY
 
 # Nicely report the numbers
 cat << EOT > /tmp/$$.out
- Firewall rejection statistics for `date +%F -d $DESIRED_DAY`
+ Firewall rejection statistics for `date +%F -d "$DESIRED_DAY"`
 
  Total number of log entries : `echo $TOTAL | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta'`
 
