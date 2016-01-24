@@ -51,6 +51,13 @@ cat << EOT
  Total number of log entries : `echo $TOTAL | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta'`
 
  Blocked by geography        : `echo $GEO_REJ | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta'` (`echo $TOTAL $GEO_REJ | awk '{ printf("%.2f%%\n", $2/($1/100)) }'`)
+EOT
+if [ $GEO_REJ -gt 0 ]
+then
+    # Show the actual countries being blocked (along with their count)
+    grep -o ' [A-Z][A-Z] ' /tmp/$$ | sort | grep -v ' DF ' | uniq -c | awk '{printf "  Blocked from %-14s: %d\n",$2,$1}'
+fi
+cat << EOT
  Blocked by blocklists       : `echo $BLOCKED | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta'` (`echo $TOTAL $BLOCKED | awk '{ printf("%.2f%%\n", $2/($1/100)) }'`)
   Blocked by Spamhaus        : `echo $BLOCKED_SH | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta'` (`echo $TOTAL $BLOCKED_SH | awk '{ printf("%.2f%%\n", $2/($1/100)) }'`)
   Blocked by DShield         : `echo $BLOCKED_DSHIELD | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta'` (`echo $TOTAL $BLOCKED_DSHIELD | awk '{ printf("%.2f%%\n", $2/($1/100)) }'`)
