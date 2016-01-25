@@ -55,7 +55,7 @@ EOT
 if [ $GEO_REJ -gt 0 ]
 then
     # Show the actual countries being blocked (along with their count)
-    grep -o ' rejection [A-Z][A-Z]' /tmp/$$ | sed -e 's/^ rejection //' | sort | uniq -c | sort -rn | \
+    grep -o ' rejection [A-Z][A-Z] ' /tmp/$$ | sed -e 's/[a-z ]//g' | sort | uniq -c | sort -rn | \
       awk '{printf "  Blocked from %-14s: %d\n",$2,$1}' | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta' >> /tmp/$$.out
 fi
 cat << EOT >> /tmp/$$.out
