@@ -55,7 +55,7 @@ EOT
 if [ $GEO_REJ -gt 0 ]
 then
     # Show the actual countries being blocked (along with their count)
-    grep -o ' rejection [A-Z][A-Z] ' /tmp/$$ | sed -e 's/[a-z ]//g' | sort | uniq -c | sort -rn | \
+    grep -o ' rejection [A-Z][A-Z] ' /tmp/$$ | sed -e 's/[a-z ]//g' | sort | uniq -c | sort -bnr | \
       awk '{printf "  Blocked from %-14s: %d\n",$2,$1}' | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta' >> /tmp/$$.out
 fi
 cat << EOT >> /tmp/$$.out
@@ -75,7 +75,36 @@ cat << EOT >> /tmp/$$.out
  Blocked generically from DMZ: `echo $GEN_DMZ_REJ | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta'` (`echo $TOTAL $GEN_DMZ_REJ | awk '{ printf("%.2f%%\n", $2/($1/100)) }'`)
  Blocked generically         : `echo $GEN_REJ | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta'` (`echo $TOTAL $GEN_REJ | awk '{ printf("%.2f%%\n", $2/($1/100)) }'`)
  Other                       : `echo $OTHER | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta'` (`echo $TOTAL $OTHER | awk '{ printf("%.2f%%\n", $2/($1/100)) }'`)
+
 EOT
+
+# Show the top 10 source IP addresses
+echo '  Top 10 source IP addresses' >> /tmp/$$.out
+grep -o ' SRC=[0-9\.]* ' /tmp/$$ | sed -e 's/[A-Z= ]//g' | sort | uniq -c | sort -bnr | head -n 10 | \
+  awk '{printf " Blocked from %-15s: %d\n",$2,$1}' | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta' >> /tmp/$$.out
+echo >> /tmp/$$.out
+
+# Show the top 10 destination IP addresses
+echo '  Top 10 destination IP addresses' >> /tmp/$$.out
+grep -o ' DST=[0-9\.]* ' /tmp/$$ | sed -e 's/[A-Z= ]//g' | sort | uniq -c | sort -bnr | head -n 10 | \
+  awk '{printf " Blocked to %-17s: %d\n",$2,$1}' | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta' >> /tmp/$$.out
+echo >> /tmp/$$.out
+
+# Show the top 10 source ports
+echo '  Top 10 source ports' >> /tmp/$$.out
+echo '  (name for port: https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml)' >> /tmp/$$.out
+grep -o ' SPT=[0-9\.]* ' /tmp/$$ | sed -e 's/[A-Z= ]//g' | sort | uniq -c | sort -bnr | head -n 10 | \
+  awk '{printf " Blocked from %-15s: %d\n",$2,$1}' >> /tmp/$$.out
+echo >> /tmp/$$.out
+
+# Show the top 10 destination ports
+echo '  Top 10 destination ports' >> /tmp/$$.out
+echo '  (name for port: https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.xhtml)' >> /tmp/$$.out
+grep -o ' DPT=[0-9\.]* ' /tmp/$$ | sed -e 's/[A-Z= ]//g' | sort | uniq -c | sort -bnr | head -n 10 | \
+  awk '{printf " Blocked to %-17s: %d\n",$2,$1}' >> /tmp/$$.out
+echo >> /tmp/$$.out
+
+# Show the data we collected
 cat /tmp/$$.out
 
 # We are done
