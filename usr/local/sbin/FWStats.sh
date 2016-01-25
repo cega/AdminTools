@@ -55,8 +55,8 @@ EOT
 if [ $GEO_REJ -gt 0 ]
 then
     # Show the actual countries being blocked (along with their count)
-    grep -o ' [A-Z][A-Z] ' /tmp/$$ | sort | grep -v ' DF ' | uniq -c | \
-      awk '{printf "  Blocked from %-14s: %d\n",$2,$1}' | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta' >> /tmp/$$
+    grep -o ' [A-Z][A-Z] ' /tmp/$$ | grep -v ' DF ' | uniq -c | sort -rn | \
+      awk '{printf "  Blocked from %-14s: %d\n",$2,$1}' | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta' >> /tmp/$$.out
 fi
 cat << EOT >> /tmp/$$.out
  Blocked by blocklists       : `echo $BLOCKED | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta'` (`echo $TOTAL $BLOCKED | awk '{ printf("%.2f%%\n", $2/($1/100)) }'`)
