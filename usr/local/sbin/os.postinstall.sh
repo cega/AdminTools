@@ -670,6 +670,11 @@ then
 fi
 sysctl -p /etc/sysctl.conf
 
+# Allow for larger connection tracking tables
+# Based on https://r00t-services.net/knowledgebase/14/Homemade-DDoS-Protection-Using-IPTables-SYNPROXY.html
+[ \$(< /sys/module/nf_conntrack/parameters/hashsize) -lt 2500000 ] && echo 2500000 > /sys/module/nf_conntrack/parameters/hashsize
+[ \$(sysctl -qn net/netfilter/nf_conntrack_max) -lt 2000000 ] && sysctl -qw net/netfilter/nf_conntrack_max=2000000
+                
 #-------------------------------------------------------------------------
 for ETH in \$(awk -F: '/eth/ {sub(/^ */,"");print \$1}' /proc/net/dev)
 do
