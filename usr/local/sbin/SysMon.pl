@@ -216,8 +216,8 @@ sub SendEmail ($)
             = "From: root <root\@$MHOST>\n"
             . "To: $Recipient\n"
             . "Subject: SysMon alert on $MHOST\n"
-            . "Date: "
-            . localtime . "\n"
+            . "Date: " 
+            . strftime("%a, %d %b %Y %H:%M:%S %z", localtime) . "\n"
             . "Mime-Version: 1.0\n"
             . "X-Mailer: $ProgName $MHOST\n\n"
             . "The system monitoring script on the server '$MHOST' detected this potentially critical issue:\n"
@@ -634,7 +634,7 @@ sub ReportInterval()
                 my $FileSystem_Sanitized = $FileSystem;
                 $FileSystem_Sanitized =~ s@/@#@g;
                 my ($outfile)
-                    = "$opt_o/Inodes_$FileSystem_Sanitized.csv" =~ /^([^\0]+)$/;
+                    = ("$opt_o/Inodes_$FileSystem_Sanitized.csv" =~ /^([^\0]+)$/);
                 if ( open( CSV, '>>', $outfile ) )
                 {
                     printf CSV '"' . "%s" . '"' . ",%d\n", $Now, $PercUsed;
